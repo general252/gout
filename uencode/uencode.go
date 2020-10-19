@@ -8,6 +8,7 @@ import (
 	"crypto/sha512"
 	"encoding/base64"
 	"encoding/hex"
+	"encoding/json"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -69,4 +70,9 @@ func HmacSHA512(key []byte, data []byte) string {
 	mac := hmac.New(sha512.New, key)
 	mac.Write(data)
 	return hex.EncodeToString(mac.Sum(nil))
+}
+
+func IsJSON(s string) bool {
+	var js map[string]interface{}
+	return json.Unmarshal([]byte(s), &js) == nil
 }
