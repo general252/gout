@@ -1,6 +1,5 @@
 package ulog
 
-
 import (
 	"fmt"
 	"github.com/astaxie/beego/logs"
@@ -10,6 +9,16 @@ import (
 	"strings"
 	"time"
 )
+
+type HandleError func(err string)
+
+var defaultHandleError HandleError = func(err string) {
+}
+
+// SetDefaultHandleError 设置默认错误处理
+func SetDefaultHandleError(handleRecover HandleError) {
+	defaultHandleError = handleRecover
+}
 
 func init() {
 	logs.GetBeeLogger().EnableFuncCallDepth(true)
@@ -54,6 +63,7 @@ func Error(format string, v ...interface{}) {
 	s := fmt.Sprintf(format, v...)
 	s += lines
 	logs.GetBeeLogger().Error(s)
+	defaultHandleError(s)
 }
 
 func Warn(format string, v ...interface{}) {
