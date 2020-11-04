@@ -1,10 +1,12 @@
 package uhost
 
 import (
+	"fmt"
 	"github.com/general252/cpu_percent/cpu_percent"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/disk"
 	"github.com/shirou/gopsutil/mem"
+	"syscall"
 	"time"
 )
 
@@ -96,4 +98,14 @@ func CPUPercent(interval time.Duration) float64 {
 	}
 
 	return cpuPercent
+}
+
+// GetSystemVersion 系统版本
+func GetSystemVersion() (string, error) {
+	version, err := syscall.GetVersion()
+	if err != nil {
+		return "", nil
+	}
+	ver := fmt.Sprintf("%d.%d (%d)", byte(version), uint8(version>>8), version>>16)
+	return ver, nil
 }
