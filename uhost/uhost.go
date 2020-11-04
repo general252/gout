@@ -1,12 +1,16 @@
 package uhost
 
 import (
+	"bufio"
 	"fmt"
 	"github.com/general252/cpu_percent/cpu_percent"
+	"github.com/general252/gout/ushell"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/disk"
 	"github.com/shirou/gopsutil/mem"
-	"syscall"
+	"io/ioutil"
+	"runtime"
+	"strings"
 	"time"
 )
 
@@ -100,12 +104,132 @@ func CPUPercent(interval time.Duration) float64 {
 	return cpuPercent
 }
 
-// GetSystemVersion 系统版本
-func GetSystemVersion() (string, error) {
-	version, err := syscall.GetVersion()
-	if err != nil {
-		return "", nil
+type SystemInfo struct {
+	Name        string // 系统名称
+	Version     string // 系统版本
+	Id          string // 系统ID
+	InstallDate string // 系统安装时间
+	StartDate   string // 系统启动时间
+	BIOS        string // BIOS 版本
+}
+
+// GetSystemInfo get system info
+func GetSystemInfo() (*SystemInfo, error) {
+	if runtime.GOOS == "windows" {
+		return getSystemInfoWindows()
+	} else {
+		if rs, err := getSystemInfoLinux(); err == nil {
+			return rs, nil
+		}
+		if rs, err := getSystemInfoLinuxProc(); err == nil {
+			return rs, nil
+		}
+		return nil, fmt.Errorf("get fail")
 	}
-	ver := fmt.Sprintf("%d.%d (%d)", byte(version), uint8(version>>8), version>>16)
-	return ver, nil
+}
+
+func getSystemInfoWindows() (*SystemInfo, error) {
+	stdOut, _, err := ushell.ShellCommand("systeminfo")
+	if err != nil {
+		return nil, err
+	}
+
+	var lines []string
+	var r = bufio.NewReader(strings.NewReader(stdOut))
+	for i := 0; i < 18; i++ {
+		if data, _, err := r.ReadLine(); err != nil {
+			break
+		} else {
+			if i == 0 || i == 8 || i == 15 || i == 16 {
+				continue
+			}
+
+			v := strings.SplitN(string(data), ":", 2)
+			if len(v) == 2 {
+				lines = append(lines, strings.TrimSpace(v[1]))
+			}
+		}
+	}
+
+	if lines == nil || len(lines) < 14 {
+		return nil, fmt.Errorf("get fail")
+	}
+
+	var info = &SystemInfo{
+		Name:        lines[1],
+		Version:     lines[2],
+		Id:          lines[7],
+		InstallDate: lines[8],
+		StartDate:   lines[9],
+		BIOS:        lines[13],
+	}
+	return info, nil
+}
+
+func getSystemInfoLinux() (*SystemInfo, error) {
+	stdOut, _, err := ushell.ShellCommand("systeminfo")
+	if err != nil {
+		return nil, err
+	}
+
+	var lines []string
+	var r = bufio.NewReader(strings.NewReader(stdOut))
+	for {
+		line, _, err := r.ReadLine()
+		if err != nil {
+			break
+		}
+
+		v := strings.SplitN(string(line), ":", 2)
+		if len(v) == 2 {
+			lines = append(lines, strings.TrimSpace(v[1]))
+		}
+
+		lines = append(lines)
+	}
+
+	if lines == nil || len(lines) < 5 {
+		return nil, fmt.Errorf("get fail")
+	}
+
+	var info = &SystemInfo{
+		Name:        lines[1],
+		Version:     lines[3],
+		Id:          "",
+		InstallDate: "",
+		StartDate:   "",
+		BIOS:        "",
+	}
+
+	return info, nil
+}
+
+func getSystemInfoLinuxProc() (*SystemInfo, error) {
+	data, err := ioutil.ReadFile("/proc/version")
+	if err != nil {
+		return nil, err
+	}
+
+	var procInfo = strings.ToLower(string(data))
+	if strings.Contains(procInfo, "red hat") {
+		if dataVer, err := ioutil.ReadFile("/etc/centos-release"); err == nil {
+			return &SystemInfo{
+				Name:    "",
+				Version: string(dataVer),
+			}, nil
+		}
+	} else if strings.Contains(procInfo, "ubuntu") {
+		a := strings.Index(procInfo, "ubuntu")
+		if a >= 0 {
+			b := strings.Index(procInfo[a:], ")")
+			if b >= 0 {
+				return &SystemInfo{
+					Name:    "",
+					Version: procInfo[a : a+b],
+				}, nil
+			}
+		}
+	}
+
+	return nil, fmt.Errorf("get fail")
 }
