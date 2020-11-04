@@ -1,14 +1,10 @@
 package ushell
 
 import (
-	"bufio"
 	"bytes"
-	"fmt"
 	"github.com/axgle/mahonia"
-	"github.com/general252/gout/uhost"
 	"os/exec"
 	"runtime"
-	"strings"
 )
 
 // ShellCommand shell
