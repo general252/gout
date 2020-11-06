@@ -10,8 +10,8 @@ func TestAESEncrypt(t *testing.T) {
 	for i := 0; i < len(d); i++ {
 		d[i] = byte(i%26) + 'a'
 	}
-	key := []byte("hgfedcba87654321")
-	iv :=  []byte("abcdefkxlikalkgi")
+	key := []byte("01234567890123456789012345678901") // 长度可以是: 16 24 32
+	iv := []byte("0123456789012345")                  // 长度固定16. len(iv) == aes.BlockSize (aes.BlockSize is 16)
 	x1, err := AESEncrypt(d, key, iv)
 	if err != nil {
 		t.Error(err)
