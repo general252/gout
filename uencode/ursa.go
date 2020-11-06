@@ -10,8 +10,8 @@ import (
 	"fmt"
 )
 
-// GenerateRSAKey生成RSA私钥和公钥. bits 证书大小
-func GenerateRSAKey(bits int) (priKey, pubKey string, err error) {
+// RSAGenerateKey 生成RSA私钥和公钥. bits 证书大小
+func RSAGenerateKey(bits int) (priKey, pubKey string, err error) {
 	var outPriKey = bytes.Buffer{}
 	var outPubKey = bytes.Buffer{}
 

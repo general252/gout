@@ -6,7 +6,7 @@ import (
 )
 
 func TestGenerateRSAKey(t *testing.T) {
-	priKey, pubKey, err := GenerateRSAKey(384)
+	priKey, pubKey, err := RSAGenerateKey(384)
 	if err != nil {
 		t.Error(err)
 		return
