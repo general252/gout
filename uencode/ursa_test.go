@@ -11,7 +11,8 @@ func TestGenerateRSAKey(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	_, _ = pubKey, priKey
+	t.Log(RSAValidatePemPrivateKey(priKey))
+	t.Log(RSAValidatePemPublicKey(pubKey))
 
 	var src []byte
 	for i := 0; i < 58; i++ {

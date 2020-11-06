@@ -167,3 +167,50 @@ func RSADecrypt(cipherText []byte, pemPriKey string) ([]byte, error) {
 	// 返回明文
 	return result.Bytes(), nil
 }
+
+// RSAValidatePemPublicKey 检查pem格式公钥
+func RSAValidatePemPublicKey(pemPubKey string) bool {
+	blk, _ := pem.Decode([]byte(pemPubKey))
+	if blk == nil || len(blk.Bytes) <= 0 {
+		return false
+	}
+
+	objPubKeyInterface, err := x509.ParsePKIXPublicKey(blk.Bytes)
+	if err != nil {
+		return false
+	}
+
+	objPublicKey, ok := objPubKeyInterface.(*rsa.PublicKey)
+	if !ok {
+		return false
+	}
+
+	if objPublicKey.N == nil {
+		return false
+	}
+
+	if objPublicKey.E < 2 {
+		return false
+	}
+	if objPublicKey.E > 1<<31-1 {
+		return false
+	}
+	return true
+}
+
+// RSAValidatePemPrivateKey 检查pem格式私钥
+func RSAValidatePemPrivateKey(pemPriKey string) bool {
+	// pem解码
+	block, _ := pem.Decode([]byte(pemPriKey))
+	if block == nil || len(block.Bytes) <= 0 {
+		return false
+	}
+
+	// X509解码
+	objPrivateKey, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+	if err != nil {
+		return false
+	}
+
+	return objPrivateKey.Validate() == nil
+}
