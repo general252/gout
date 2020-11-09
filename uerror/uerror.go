@@ -74,6 +74,16 @@ func Printf(format string, a ...interface{}) *uError {
 	return newUError(nil, fmt.Sprintf(format, a...))
 }
 
+// WithNothing no msg, no error, only stack
+func WithNothing() *uError {
+	return newUError(nil, "")
+}
+
+// WithError no message
+func WithError(err error) *uError {
+	return newUError(err, "")
+}
+
 // PrintlnWithError fmt.Println(...) with error
 func PrintlnWithError(err error, a ...interface{}) *uError {
 	return newUError(err, fmt.Sprint(a...))
