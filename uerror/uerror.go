@@ -2,13 +2,12 @@ package uerror
 
 import (
 	"fmt"
-	"path/filepath"
-	"runtime"
+	"github.com/general252/gout/usafe"
 )
 
 type uError struct {
 	err       error
-	msg       string
+	msg       []string
 	callstack []string
 }
 
@@ -17,8 +16,10 @@ func (c *uError) Error() string {
 	if c == nil {
 		return ""
 	}
-	return fmt.Sprintf("error: %v\nmessage: %v\nstack: \n%v",
-		c.err, c.msg, mCallStackFormatString(c.callstack))
+	return fmt.Sprintf(
+		"error: %v\nmessage: \n%vstack: \n%v",
+		c.err, mFormatString(c.msg), mFormatString(c.callstack),
+	)
 }
 
 func (c *uError) GetError() error {
@@ -27,10 +28,13 @@ func (c *uError) GetError() error {
 	}
 	return c.err
 }
-
-func (c *uError) GetMessage() string {
+func (c *uError) appendMessage(msg string) *uError {
+	c.msg = append(c.msg, msg)
+	return c
+}
+func (c *uError) GetMessage() []string {
 	if c == nil {
-		return ""
+		return nil
 	}
 	return c.msg
 }
@@ -49,10 +53,14 @@ func ConvertToUError(err error) (*uError, bool) {
 }
 
 func newUError(err error, msg string) *uError {
+	if uErr, ok := ConvertToUError(err); ok {
+		return uErr.appendMessage(msg)
+	}
+
 	return &uError{
-		callstack: CallStackList(3, 4),
+		callstack: usafe.CallStackList(3, 4),
 		err:       err,
-		msg:       msg,
+		msg:       []string{msg},
 	}
 }
 
@@ -76,43 +84,11 @@ func PrintfWithError(err error, format string, a ...interface{}) *uError {
 	return newUError(err, fmt.Sprintf(format, a...))
 }
 
-// CallStackList 获取调用堆栈, 0: 本函数, 1: 上级函数, 2: 上上级函数
-// startDepth: 从n级统计,
-// count: 统计count个
-func CallStackList(startDepth, count int) []string {
-	var lines []string
-	for i := startDepth; i <= startDepth+count; i++ {
-		_, file, line, ok := runtime.Caller(i)
-		if !ok {
-			file = "???"
-			line = 0
-			break
-		} else {
-			_, file = filepath.Split(file)
-		}
-
-		lines = append(lines, fmt.Sprintf("%v:%v", file, line))
+func mFormatString(lines []string) string {
+	var rs = ""
+	for i := 0; i < len(lines); i++ {
+		rs += fmt.Sprintf("  %02v. %v\n", i+1, lines[i])
 	}
 
-	return lines
-}
-
-// CallStackFormatString 获取调用堆栈
-func CallStackFormatString(startDepth, count int) string {
-	stack := CallStackList(startDepth, count)
-	var lines = "\n"
-	for i := 0; i < len(stack); i++ {
-		lines += "  " + stack[i] + "\n"
-	}
-
-	return lines
-}
-
-func mCallStackFormatString(stack []string) string {
-	var lines = ""
-	for i := 0; i < len(stack); i++ {
-		lines += fmt.Sprintf("  %02v. %v\n", i+1, stack[i])
-	}
-
-	return lines
+	return rs
 }
