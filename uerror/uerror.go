@@ -2,7 +2,7 @@ package uerror
 
 import (
 	"fmt"
-	"github.com/general252/gout/usafe"
+	"github.com/general252/gout/ustack"
 )
 
 type uError struct {
@@ -58,7 +58,7 @@ func newUError(err error, msg string) *uError {
 	}
 
 	return &uError{
-		callstack: usafe.CallStackList(3, 4),
+		callstack: ustack.CallStackList(3, 4),
 		err:       err,
 		msg:       []string{msg},
 	}
