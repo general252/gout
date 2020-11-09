@@ -7,10 +7,10 @@ import (
 
 func ExamplePrintfWithError() {
 	var a = func() error {
-		return PrintfWithError(io.EOF, "read %v end", "log.txt")
+		return WithErrorAndMessageF(io.EOF, "read %v end", "log.txt")
 	}
 	var b = func() error {
-		return PrintlnWithError(a(), "b error")
+		return WithErrorAndMessage(a(), "b error")
 	}
 	var c = func() error {
 		return b()

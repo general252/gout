@@ -64,13 +64,13 @@ func newUError(err error, msg string) *uError {
 	}
 }
 
-// Println fmt.Println(...)
-func Println(a ...interface{}) *uError {
+// WithMessage fmt.Println(...)
+func WithMessage(a ...interface{}) *uError {
 	return newUError(nil, fmt.Sprint(a...))
 }
 
-// Printf fmt.Printf(...)
-func Printf(format string, a ...interface{}) *uError {
+// WithMessageF fmt.Printf(...)
+func WithMessageF(format string, a ...interface{}) *uError {
 	return newUError(nil, fmt.Sprintf(format, a...))
 }
 
@@ -84,13 +84,13 @@ func WithError(err error) *uError {
 	return newUError(err, "")
 }
 
-// PrintlnWithError fmt.Println(...) with error
-func PrintlnWithError(err error, a ...interface{}) *uError {
+// WithErrorAndMessage fmt.Println(...) with error
+func WithErrorAndMessage(err error, a ...interface{}) *uError {
 	return newUError(err, fmt.Sprint(a...))
 }
 
-// PrintfWithError fmt.Printf(...) with error
-func PrintfWithError(err error, format string, a ...interface{}) *uError {
+// WithErrorAndMessageF fmt.Printf(...) with error
+func WithErrorAndMessageF(err error, format string, a ...interface{}) *uError {
 	return newUError(err, fmt.Sprintf(format, a...))
 }
 
