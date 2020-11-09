@@ -46,14 +46,14 @@ func (c *uError) GetStack() []string {
 	return c.callstack
 }
 
-// ConvertToUError convert to uError
-func ConvertToUError(err error) (*uError, bool) {
+// AsUError convert to uError
+func AsUError(err error) (*uError, bool) {
 	uErr, ok := err.(*uError)
 	return uErr, ok
 }
 
 func newUError(err error, msg string) *uError {
-	if uErr, ok := ConvertToUError(err); ok {
+	if uErr, ok := AsUError(err); ok {
 		return uErr.appendMessage(msg)
 	}
 
