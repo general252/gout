@@ -45,15 +45,28 @@ func Flush() {
 	logs.GetBeeLogger().Flush()
 }
 
-func Info(format string, v ...interface{}) {
+func Info(v ...interface{}) {
+	logs.GetBeeLogger().Info(fmt.Sprint(v...))
+}
+func Debug(v ...interface{}) {
+	logs.GetBeeLogger().Debug(fmt.Sprint(v...))
+}
+func Error(v ...interface{}) {
+	logs.GetBeeLogger().Error(fmt.Sprint(v...))
+}
+func Warn(v ...interface{}) {
+	logs.GetBeeLogger().Warn(fmt.Sprint(v...))
+}
+
+func InfoF(format string, v ...interface{}) {
 	logs.GetBeeLogger().Info(format, v...)
 }
 
-func Debug(format string, v ...interface{}) {
+func DebugF(format string, v ...interface{}) {
 	logs.GetBeeLogger().Debug(format, v...)
 }
 
-func Error(format string, v ...interface{}) {
+func ErrorF(format string, v ...interface{}) {
 	stack := getFileLine(5)
 	var lines = "\n"
 	for i := 0; i < len(stack); i++ {
@@ -66,7 +79,7 @@ func Error(format string, v ...interface{}) {
 	defaultHandleError(s)
 }
 
-func Warn(format string, v ...interface{}) {
+func WarnF(format string, v ...interface{}) {
 	logs.GetBeeLogger().Warn(format, v...)
 }
 

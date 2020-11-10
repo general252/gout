@@ -5,17 +5,13 @@ import (
 	"io"
 )
 
-func ExamplePrintfWithError() {
-	var a = func() error {
-		return WithErrorAndMessageF(io.EOF, "read %v end", "log.txt")
-	}
-	var b = func() error {
-		return WithErrorAndMessage(a(), "b error")
-	}
-	var c = func() error {
-		return b()
-	}
-	fmt.Println(c())
+func ExampleWithError() {
+	var err error
+	err = WithError(io.ErrShortBuffer)
+	err = WithErrorAndMessageF(err, "read %v end", "log.txt")
+	err = WithErrorAndMessage(err, "b error")
+
+	fmt.Println(err)
 	// Output:
 	// error: EOF
 	// message:
