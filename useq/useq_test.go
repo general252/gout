@@ -6,11 +6,11 @@ import (
 	"testing"
 )
 
-func ExampleGetSeqU64() {
-	var seq = GetSeqU64()
+func ExampleGetUint64() {
+	var seq = GetUint64()
 	fmt.Println(seq)
 
-	seq = GetSeqU64()
+	seq = GetUint64()
 	fmt.Println(seq)
 
 	// Output:
@@ -18,12 +18,12 @@ func ExampleGetSeqU64() {
 	// 2
 }
 
-func ExampleGetSeq32() {
+func ExampleGetInt32() {
 	var wg = sync.WaitGroup{}
 	var fun = func(id int) {
 		defer wg.Done()
 		for i := 0; i < 100; i++ {
-			var seq = GetSeq32()
+			var seq = GetInt32()
 			fmt.Printf("%4d %5d\n", id, seq)
 		}
 	}
@@ -40,7 +40,7 @@ func ExampleGetSeq32() {
 
 func BenchmarkGetSeq32(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		var seq = GetSeq64()
+		var seq = GetInt64()
 		_ = seq
 	}
 }
