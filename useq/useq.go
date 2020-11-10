@@ -14,8 +14,8 @@ var (
 	seqU16 uint16 = 0
 )
 
-// GetInt64 获取唯一int64值
-func GetInt64() int64 {
+// Int64 获取唯一int64值
+func Int64() int64 {
 	mux.Lock()
 	defer mux.Unlock()
 
@@ -23,7 +23,7 @@ func GetInt64() int64 {
 	return seq64
 }
 
-func GetUint64() uint64 {
+func Uint64() uint64 {
 	mux.Lock()
 	defer mux.Unlock()
 
@@ -31,7 +31,7 @@ func GetUint64() uint64 {
 	return seqU64
 }
 
-func GetInt32() int32 {
+func Int32() int32 {
 	mux.Lock()
 	defer mux.Unlock()
 
@@ -39,7 +39,7 @@ func GetInt32() int32 {
 	return seq32
 }
 
-func GetUint32() uint32 {
+func Uint32() uint32 {
 	mux.Lock()
 	defer mux.Unlock()
 
@@ -47,7 +47,7 @@ func GetUint32() uint32 {
 	return seqU32
 }
 
-func GetInt16() int16 {
+func Int16() int16 {
 	mux.Lock()
 	defer mux.Unlock()
 
@@ -55,7 +55,7 @@ func GetInt16() int16 {
 	return seq16
 }
 
-func GetUint16() uint16 {
+func Uint16() uint16 {
 	mux.Lock()
 	defer mux.Unlock()
 
