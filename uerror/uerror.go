@@ -22,7 +22,7 @@ func (c *uError) Error() string {
 	)
 }
 
-func (c *uError) GetError() error {
+func (c *uError) Err() error {
 	if c == nil {
 		return nil
 	}
@@ -32,14 +32,22 @@ func (c *uError) appendMessage(msg string) *uError {
 	c.msg = append(c.msg, msg)
 	return c
 }
-func (c *uError) GetMessage() []string {
+func (c *uError) Message() []string {
 	if c == nil {
 		return nil
 	}
 	return c.msg
 }
 
-func (c *uError) GetStack() []string {
+func (c *uError) Msg() string {
+	if c == nil || c.msg == nil {
+		return ""
+	}
+
+	return mFormatString(c.msg)
+}
+
+func (c *uError) Stack() []string {
 	if c == nil {
 		return nil
 	}
@@ -50,6 +58,12 @@ func (c *uError) GetStack() []string {
 func AsUError(err error) (*uError, bool) {
 	uErr, ok := err.(*uError)
 	return uErr, ok
+}
+
+// AsUErr convert to uError
+func AsUErr(err error) *uError {
+	uErr, _ := err.(*uError)
+	return uErr
 }
 
 func newUError(err error, msg string) *uError {
