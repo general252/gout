@@ -28,12 +28,15 @@ func CallStackList(startDepth, count int) []string {
 		} else {
 			_, file = filepath.Split(file)
 		}
+
+		var newLine = fmt.Sprintf("%v:%v", file, line)
 		if addFunction {
 			if fn := runtime.FuncForPC(pc); fn != nil {
-				file += ":" + fn.Name()
+				newLine = fmt.Sprintf("%v:%v %v(..)", file, line, fn.Name())
 			}
 		}
-		lines = append(lines, fmt.Sprintf("%v:%v", file, line))
+
+		lines = append(lines, newLine)
 	}
 
 	return lines
