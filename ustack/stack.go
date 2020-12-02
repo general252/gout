@@ -6,6 +6,14 @@ import (
 	"runtime"
 )
 
+var (
+	addFunction = false
+)
+
+func CallStackAddFunction(haveFunction bool) {
+	addFunction = haveFunction
+}
+
 // CallStackList 获取调用堆栈, 0: 本函数, 1: 上级函数, 2: 上上级函数
 // startDepth: 从n级统计,
 // count: 统计count个
@@ -20,10 +28,11 @@ func CallStackList(startDepth, count int) []string {
 		} else {
 			_, file = filepath.Split(file)
 		}
-		_ = pc
-		//if fn := runtime.FuncForPC(pc); fn != nil {
-		//	file += "  " + fn.Name()
-		//}
+		if addFunction {
+			if fn := runtime.FuncForPC(pc); fn != nil {
+				file += ":" + fn.Name()
+			}
+		}
 		lines = append(lines, fmt.Sprintf("%v:%v", file, line))
 	}
 
