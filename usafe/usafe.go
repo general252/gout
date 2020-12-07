@@ -1,8 +1,10 @@
 package usafe
 
 import (
+	"context"
 	"fmt"
 	"runtime/debug"
+	"time"
 )
 
 type HandleRecover func(err interface{})
@@ -31,4 +33,39 @@ func GoWithRecover(goroutine func(), handleRecover HandleRecover) {
 		}()
 		goroutine()
 	}()
+}
+
+// GoRetry 重试funRetry
+func GoRetry(ctx context.Context, interval time.Duration, retryTimes int, funRetry func() error, funResult func(err error)) {
+	Go(func() {
+		// 等待ticker时间
+		var waitSignal = func(cont context.Context, timer *time.Ticker) (timeout bool) {
+			select {
+			case <-cont.Done():
+				return false
+			case <-timer.C:
+				return true
+			}
+		}
+
+		t := time.NewTicker(interval)
+		defer func() {
+			t.Stop()
+		}()
+
+		var err error
+		for i := 0; i < retryTimes; i++ {
+			if waitSignal(ctx, t) == false {
+				return
+			}
+
+			if err = funRetry(); err != nil {
+				continue
+			}
+
+			break
+		}
+
+		funResult(err)
+	})
 }
