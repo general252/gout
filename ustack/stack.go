@@ -32,7 +32,7 @@ func CallStackList(startDepth, count int) []string {
 		var newLine = fmt.Sprintf("%v:%v", file, line)
 		if addFunction {
 			if fn := runtime.FuncForPC(pc); fn != nil {
-				newLine = fmt.Sprintf("%v:%v %v(..)", file, line, fn.Name())
+				newLine = fmt.Sprintf("%-20s func: %v(..)", newLine, fn.Name())
 			}
 		}
 

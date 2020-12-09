@@ -3,6 +3,7 @@ package ulog
 import (
 	"fmt"
 	"github.com/astaxie/beego/logs"
+	"github.com/general252/gout/ustack"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -67,10 +68,11 @@ func DebugF(format string, v ...interface{}) {
 }
 
 func ErrorF(format string, v ...interface{}) {
-	stack := getFileLine(5)
-	var lines = "\n"
+	//stack := getFileLine(5)
+	stack := ustack.CallStackList(2, 3)
+	var lines = "\nstack:\n"
 	for i := 0; i < len(stack); i++ {
-		lines += "  " + stack[i] + "\n"
+		lines += fmt.Sprintf(" %2d. %v\n", i+1, stack[i])
 	}
 
 	s := fmt.Sprintf(format, v...)
