@@ -40,7 +40,7 @@ func (c *mulUdpPacket) IsTimeout(now time.Time) bool {
 func (c *mulUdpPacket) RecvPacket(pkt *UdpPacket) {
 	for _, packet := range c.packetArray {
 		if pkt.Index() == packet.Index() {
-			ulog.WarnF("packet pktIndex repeat. addPacket: %v. %v", pkt, packet)
+			ulog.WarnF("packet PktIndex repeat. addPacket: %v. %v", pkt, packet)
 			return
 		}
 	}
@@ -56,7 +56,7 @@ func (c *mulUdpPacket) GetPacketData() []byte {
 
 	var payload []byte
 	for i := 0; i < len(c.packetArray); i++ {
-		payload = append(payload, c.packetArray[i].Payload()...)
+		payload = append(payload, c.packetArray[i].PayloadData()...)
 	}
 	return payload
 }

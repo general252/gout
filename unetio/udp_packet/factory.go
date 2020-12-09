@@ -16,12 +16,12 @@ func Serialization(data []byte) []UdpPacket {
 
 	if len(data) <= unetio.UdpPacketPayloadMaxSize {
 		var pkt = UdpPacket{
-			pktSeq:   seq,
-			pktCount: 1,
-			pktIndex: 0,
-			pktType:  unetio.PktTypeData,
+			PktSeq:   seq,
+			PktCount: 1,
+			PktIndex: 0,
+			PktType:  unetio.PktTypeData,
 		}
-		_, _ = pkt.payload.Write(data)
+		_, _ = pkt.Payload.Write(data)
 
 		return []UdpPacket{pkt}
 	} else {
@@ -41,11 +41,11 @@ func Serialization(data []byte) []UdpPacket {
 			}
 
 			var pkt = UdpPacket{
-				pktSeq:   seq,
-				pktCount: uint16(n),
-				pktIndex: uint16(i),
+				PktSeq:   seq,
+				PktCount: uint16(n),
+				PktIndex: uint16(i),
 			}
-			_, _ = pkt.payload.Write(data[offset:end])
+			_, _ = pkt.Payload.Write(data[offset:end])
 
 			result = append(result, pkt)
 		}
@@ -56,7 +56,7 @@ func Serialization(data []byte) []UdpPacket {
 
 func Deserialization(pktData []byte) (*UdpPacket, error) {
 	var pkt UdpPacket
-	if err := pkt.unPacket(pktData); err != nil {
+	if err := pkt.UnPacket(pktData); err != nil {
 		return nil, err
 	} else {
 		return &pkt, nil
@@ -162,7 +162,7 @@ func (c *UDPPacketFactory) mPushPacketData(addr net.UDPAddr, pktData []byte) {
 			//	c.delMulPacket(pkt.ConnSeqId())
 			//}
 		} else {
-			c.handle(pkt.Payload())
+			c.handle(pkt.PayloadData())
 		}
 	}
 }
