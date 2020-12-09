@@ -80,3 +80,29 @@ func BytesToUint16(b []byte) uint16 {
 
 	return x
 }
+
+func BytesToUint64(b []byte) uint64 {
+	bytesBuffer := bytes.NewBuffer(b)
+
+	var x uint64
+	if err := binary.Read(bytesBuffer, binary.BigEndian, &x); err != nil {
+		ulog.ErrorF("binary read fail. %v", err)
+		return 0
+	}
+
+	return x
+}
+
+func Uint64ToBytes(x uint64) []byte {
+	//var out = make([]byte, 2)
+	//binary.BigEndian.PutUint16(out, x)
+	//return out
+
+	bytesBuffer := bytes.NewBuffer([]byte{})
+	if err := binary.Write(bytesBuffer, binary.BigEndian, x); err != nil {
+		ulog.ErrorF("binary write fail. %v", err)
+		return nil
+	}
+
+	return bytesBuffer.Bytes()
+}

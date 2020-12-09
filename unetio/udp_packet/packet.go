@@ -2,6 +2,7 @@ package udp_packet
 
 import (
 	"bytes"
+	"encoding/binary"
 	"fmt"
 	"github.com/general252/gout/uerror"
 	"github.com/general252/gout/ulog"
@@ -13,11 +14,11 @@ import (
 
 // UdpPacket UDP数据包
 type UdpPacket struct {
-	pktSeq   uint16        // 65536
-	pktCount uint16        // 分包数
-	pktIndex uint16        // 分包索引 0, 1, 2, ..., (pktCount-1)
+	pktSeq   uint16         // 65536
+	pktCount uint16         // 分包数
+	pktIndex uint16         // 分包索引 0, 1, 2, ..., (pktCount-1)
 	pktType  unetio.PktType // 包类型
-	pktCRC   uint8         // 包校验
+	pktCRC   uint8          // 包校验
 
 	// UdpPacketHeadSize = 8
 
@@ -27,15 +28,24 @@ type UdpPacket struct {
 
 // 序列化头
 func (c *UdpPacket) serHead() []byte {
-	var result []byte
+	var buf = &bytes.Buffer{}
 
-	result = append(result, unetio.Uint16ToBytes(c.pktSeq)...)
-	result = append(result, unetio.Uint16ToBytes(c.pktCount)...)
-	result = append(result, unetio.Uint16ToBytes(c.pktIndex)...)
-	result = append(result, uint8(c.pktType))
-	result = append(result, uint8(crc32.ChecksumIEEE(result)%math.MaxUint8))
+	_ = binary.Write(buf, binary.BigEndian, c.pktSeq)
+	_ = binary.Write(buf, binary.BigEndian, c.pktCount)
+	_ = binary.Write(buf, binary.BigEndian, c.pktIndex)
+	_ = binary.Write(buf, binary.BigEndian, c.pktType)
+	_ = binary.Write(buf, binary.BigEndian, uint8(crc32.ChecksumIEEE(buf.Bytes())%math.MaxUint8))
 
-	return result
+	return buf.Bytes()
+
+	//var result []byte
+	//result = append(result, unetio.Uint16ToBytes(c.pktSeq)...)
+	//result = append(result, unetio.Uint16ToBytes(c.pktCount)...)
+	//result = append(result, unetio.Uint16ToBytes(c.pktIndex)...)
+	//result = append(result, uint8(c.pktType))
+	//result = append(result, uint8(crc32.ChecksumIEEE(result)%math.MaxUint8))
+	//
+	//return result
 }
 
 // 反序列化头
@@ -44,11 +54,19 @@ func (c *UdpPacket) unSerHead(head []byte) error {
 		return uerror.WithMessageF("head >= %v", unetio.UdpPacketHeadSize)
 	}
 
-	c.pktSeq = unetio.BytesToUint16(head[0:2])
-	c.pktCount = unetio.BytesToUint16(head[2:4])
-	c.pktIndex = unetio.BytesToUint16(head[4:6])
-	c.pktType = unetio.PktType(head[6])
-	c.pktCRC = head[7]
+	var buf = bytes.NewReader(head)
+
+	_ = binary.Read(buf, binary.BigEndian, &c.pktSeq)
+	_ = binary.Read(buf, binary.BigEndian, &c.pktCount)
+	_ = binary.Read(buf, binary.BigEndian, &c.pktIndex)
+	_ = binary.Read(buf, binary.BigEndian, &c.pktType)
+	_ = binary.Read(buf, binary.BigEndian, &c.pktCRC)
+
+	//c.pktSeq = unetio.BytesToUint16(head[0:2])
+	//c.pktCount = unetio.BytesToUint16(head[2:4])
+	//c.pktIndex = unetio.BytesToUint16(head[4:6])
+	//c.pktType = unetio.PktType(head[6])
+	//c.pktCRC = head[7]
 
 	calcCRC := uint8(crc32.ChecksumIEEE(head[:7]) % math.MaxUint8)
 	if calcCRC != c.pktCRC {
