@@ -8,4 +8,5 @@ require (
 	github.com/general252/cpu_percent v0.0.0-20200622104003-2bd0ac1ddeab
 	github.com/satori/go.uuid v1.2.0
 	github.com/shirou/gopsutil v2.20.8+incompatible
+	github.com/willf/bitset v1.1.11
 )
