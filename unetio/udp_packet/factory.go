@@ -201,6 +201,7 @@ func (c *UDPPacketFactory) mHandleAddItemBuffer() {
 	}
 }
 
+// 检查分包接收完成或接收超时
 func (c *UDPPacketFactory) checkTimeout() {
 	var now = time.Now()
 	var keys []interface{}

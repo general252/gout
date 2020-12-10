@@ -62,7 +62,7 @@ func (c *mulUdpPacket) GetPacketData() []byte {
 }
 
 // 分包的seq
-func (c *mulUdpPacket) GetSeq() uint16 {
+func (c *mulUdpPacket) GetSeq() uint32 {
 	if c.packetArray == nil || len(c.packetArray) <= 0 {
 		return 0
 	}
