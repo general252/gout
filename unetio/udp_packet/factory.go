@@ -4,6 +4,7 @@ import (
 	"container/list"
 	"context"
 	"fmt"
+	"github.com/general252/gout/laboratory/loss_detection"
 	"github.com/general252/gout/ulog"
 	"github.com/general252/gout/unetio"
 	"net"
@@ -77,6 +78,8 @@ type UDPPacketFactory struct {
 
 	udpPktBufferItemList      *list.List // 缓存区队列, 不直接处理接收的数据, 目的是防止解包耗时导致丢包
 	mutexUdpPktBufferItemList sync.Mutex // 缓冲区锁
+
+	lossCheck *loss_detection.SeqCheck
 }
 
 func NewFactoryPacket(ctx context.Context, handle PayloadHandle) *UDPPacketFactory {
@@ -85,6 +88,10 @@ func NewFactoryPacket(ctx context.Context, handle PayloadHandle) *UDPPacketFacto
 		handle:               handle,
 		udpPktBufferItemList: list.New(),
 	}
+
+	rs.lossCheck = loss_detection.NewSeqLossCheck(nil, ctx, func(lossSeq uint32) {
+
+	})
 
 	go rs.routine()
 
@@ -139,6 +146,7 @@ func (c *UDPPacketFactory) innerPushMulUdpPacket(pkt *UdpPacket) *mulUdpPacket {
 		addObj.RecvPacket(pkt)
 
 		c.mulUdpPacketList.Store(connSeq, addObj)
+		c.lossCheck.Add(pkt.Seq())
 
 		return addObj
 	}
@@ -163,6 +171,7 @@ func (c *UDPPacketFactory) mPushPacketData(addr net.UDPAddr, pktData []byte) {
 			//}
 		} else {
 			c.handle(pkt.PayloadData())
+			c.lossCheck.Add(pkt.Seq())
 		}
 	}
 }

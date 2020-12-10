@@ -45,9 +45,13 @@ func NewSeqLossCheck(wg *sync.WaitGroup, ctx context.Context, handLoss HandLossS
 		lastCheckPos: InvalidPos,
 	}
 
-	wg.Add(1)
+	if wg != nil {
+		wg.Add(1)
+	}
 	go func() {
-		defer wg.Done()
+		if wg != nil {
+			defer wg.Done()
+		}
 		for {
 			select {
 			case <-ctx.Done():
