@@ -9,13 +9,13 @@ import (
 )
 
 // 分包的udp
-type mulUdpPacket struct {
+type MulUdpPacket struct {
 	addTime     time.Time
 	packetArray []*UdpPacket
 }
 
 // 分包接收完整
-func (c *mulUdpPacket) IsRecvAllPacket() bool {
+func (c *MulUdpPacket) IsRecvAllPacket() bool {
 	if c.packetArray == nil {
 		return false
 	}
@@ -29,7 +29,7 @@ func (c *mulUdpPacket) IsRecvAllPacket() bool {
 }
 
 // seq分包接收超时
-func (c *mulUdpPacket) IsTimeout(now time.Time) bool {
+func (c *MulUdpPacket) IsTimeout(now time.Time) bool {
 	if now.Sub(c.addTime) > unetio.MulUdpPacketTimeout {
 		return true
 	}
@@ -37,7 +37,7 @@ func (c *mulUdpPacket) IsTimeout(now time.Time) bool {
 }
 
 // 接收到一个包
-func (c *mulUdpPacket) RecvPacket(pkt *UdpPacket) {
+func (c *MulUdpPacket) RecvPacket(pkt *UdpPacket) {
 	for _, packet := range c.packetArray {
 		if pkt.Index() == packet.Index() {
 			ulog.WarnF("packet PktIndex repeat. addPacket: %v. %v", pkt, packet)
@@ -48,8 +48,16 @@ func (c *mulUdpPacket) RecvPacket(pkt *UdpPacket) {
 	c.packetArray = append(c.packetArray, pkt)
 }
 
+func (c *MulUdpPacket) FirstPacket() *UdpPacket {
+	if len(c.packetArray) > 0 {
+		return c.packetArray[0]
+	}
+
+	return nil
+}
+
 // 拼接分包
-func (c *mulUdpPacket) GetPacketData() []byte {
+func (c *MulUdpPacket) GetPacketData() []byte {
 	sort.Slice(c.packetArray, func(i, j int) bool {
 		return c.packetArray[i].Index() < c.packetArray[j].Index()
 	})
@@ -62,7 +70,7 @@ func (c *mulUdpPacket) GetPacketData() []byte {
 }
 
 // 分包的seq
-func (c *mulUdpPacket) GetSeq() uint32 {
+func (c *MulUdpPacket) GetSeq() uint32 {
 	if c.packetArray == nil || len(c.packetArray) <= 0 {
 		return 0
 	}
@@ -71,7 +79,7 @@ func (c *mulUdpPacket) GetSeq() uint32 {
 }
 
 // 序列化
-func (c *mulUdpPacket) String() string {
+func (c *MulUdpPacket) String() string {
 	if c.packetArray == nil || len(c.packetArray) <= 0 {
 		return "no packet"
 	}

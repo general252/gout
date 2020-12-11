@@ -18,7 +18,7 @@ func Server(port int) {
 	// 设置写缓冲区大小
 	_ = udpConn.SetWriteBuffer(512 * 1024 * 1024)
 
-	var connMap = make(map[string]*udp_packet.UDPPacketFactory)
+	var connMap = make(map[string]*udp_packet.UdpPacketServer)
 	var buffer = make([]byte, 65536)
 
 	for {
@@ -30,7 +30,7 @@ func Server(port int) {
 
 		var pktFactory = connMap[addr.String()]
 		if pktFactory == nil {
-			pktFactory = udp_packet.NewFactoryPacket(context.TODO(), func(payload []byte) {
+			pktFactory = udp_packet.NewUdpPacketServer(context.TODO(), func(payload []byte) {
 				ulog.Info("收到数据: ", len(payload))
 			})
 			connMap[addr.String()] = pktFactory

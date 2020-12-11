@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"github.com/general252/gout/ulog"
-	"math/rand"
-	"sync"
 	"time"
 )
 
@@ -13,7 +11,8 @@ const (
 	UdpPacketHeadSize = 12
 	// Internet上的标准MTU值为576字节
 	// unix网络编程第一卷里说：ipv4协议规定ip层的最小重组缓冲区大小为576
-	UdpPacketPayloadMaxSize = (576 - 8 - 20) - UdpPacketHeadSize
+	UdpPacketMaxSize        = 576 - 8 - 20
+	UdpPacketPayloadMaxSize = UdpPacketMaxSize - UdpPacketHeadSize
 
 	/**
 	uint32:uint16:uint16
@@ -32,25 +31,6 @@ const (
 	PktTypeData PktType = 1 // 数据包
 	PktTypeReq  PktType = 2 // 请求包, 请求重发丢失的包
 )
-
-var (
-	gSeq    uint32 = 0
-	lock    sync.Mutex
-	seqOnce sync.Once
-)
-
-func GetSeq() uint32 {
-	lock.Lock()
-	defer lock.Unlock()
-
-	seqOnce.Do(func() {
-		rand.Seed(time.Now().UnixNano())
-		gSeq = rand.Uint32()
-	})
-
-	gSeq++
-	return gSeq
-}
 
 //整形转换成字节
 func Uint16ToBytes(x uint16) []byte {

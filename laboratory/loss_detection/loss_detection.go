@@ -155,7 +155,7 @@ func (c *SeqCheck) checkMark() {
 			if c.seqSet.Test(i) {
 				c.seqSet.Clear(i)
 			} else {
-				log.Printf("loss 1 seq: %v", i)
+				// log.Printf("loss 1 seq: %v", i)
 				if c.hand != nil {
 					c.hand(uint32(i))
 				}
@@ -168,7 +168,7 @@ func (c *SeqCheck) checkMark() {
 		if c.seqSet.Test(i) {
 			c.seqSet.Clear(i)
 		} else {
-			log.Printf("loss 2 seq: %v", i)
+			// log.Printf("loss 2 seq: %v", i)
 			if c.hand != nil {
 				c.hand(uint32(i))
 			}

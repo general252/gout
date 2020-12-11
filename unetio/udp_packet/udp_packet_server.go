@@ -6,75 +6,25 @@ import (
 	"fmt"
 	"github.com/general252/gout/laboratory/loss_detection"
 	"github.com/general252/gout/ulog"
-	"github.com/general252/gout/unetio"
 	"net"
 	"sync"
 	"time"
 )
-
-func Serialization(data []byte) []UdpPacket {
-	var seq = unetio.GetSeq()
-
-	if len(data) <= unetio.UdpPacketPayloadMaxSize {
-		var pkt = UdpPacket{
-			PktSeq:   seq,
-			PktCount: 1,
-			PktIndex: 0,
-			PktType:  unetio.PktTypeData,
-		}
-		_, _ = pkt.Payload.Write(data)
-
-		return []UdpPacket{pkt}
-	} else {
-		var dataLength = len(data)
-
-		var n = dataLength / unetio.UdpPacketPayloadMaxSize
-		if dataLength%unetio.UdpPacketPayloadMaxSize > 0 {
-			n += 1
-		}
-
-		var result = make([]UdpPacket, 0, n)
-		for i := 0; i < n; i++ {
-			var offset = i * unetio.UdpPacketPayloadMaxSize
-			var end = offset + unetio.UdpPacketPayloadMaxSize
-			if end > dataLength {
-				end = dataLength
-			}
-
-			var pkt = UdpPacket{
-				PktSeq:   seq,
-				PktCount: uint16(n),
-				PktIndex: uint16(i),
-			}
-			_, _ = pkt.Payload.Write(data[offset:end])
-
-			result = append(result, pkt)
-		}
-
-		return result
-	}
-}
-
-func Deserialization(pktData []byte) (*UdpPacket, error) {
-	var pkt UdpPacket
-	if err := pkt.UnPacket(pktData); err != nil {
-		return nil, err
-	} else {
-		return &pkt, nil
-	}
-}
 
 type stUdpPacketBuffer struct {
 	addr   net.UDPAddr
 	buffer []byte
 }
 
-type PayloadHandle func(payload []byte)
+type PayloadHandle func(pktHeadInfo *MulUdpPacket, payload []byte)
+type TimeoutHandle func(pktHeadInfo *MulUdpPacket)
 
-type UDPPacketFactory struct {
-	ctx              context.Context
-	handle           PayloadHandle
-	mulUdpPacketList sync.Map // "ip:port_pktSeq" -> *mulUdpPacket
+type UdpPacketServer struct {
+	ctx           context.Context
+	handlePayload PayloadHandle
+	handleTimeout TimeoutHandle
+
+	mulUdpPacketList sync.Map // "ip:port_pktSeq" -> *MulUdpPacket
 
 	udpPktBufferItemList      *list.List // 缓存区队列, 不直接处理接收的数据, 目的是防止解包耗时导致丢包
 	mutexUdpPktBufferItemList sync.Mutex // 缓冲区锁
@@ -82,15 +32,18 @@ type UDPPacketFactory struct {
 	lossCheck *loss_detection.SeqCheck
 }
 
-func NewFactoryPacket(ctx context.Context, handle PayloadHandle) *UDPPacketFactory {
-	var rs = &UDPPacketFactory{
+func NewUdpPacketServer(ctx context.Context, handlePayload PayloadHandle, handleTime TimeoutHandle, handleLoss loss_detection.HandLossSeq) *UdpPacketServer {
+	var rs = &UdpPacketServer{
 		ctx:                  ctx,
-		handle:               handle,
+		handlePayload:        handlePayload,
+		handleTimeout:        handleTime,
 		udpPktBufferItemList: list.New(),
 	}
 
 	rs.lossCheck = loss_detection.NewSeqLossCheck(nil, ctx, func(lossSeq uint32) {
-
+		if handleLoss != nil {
+			handleLoss(lossSeq)
+		}
 	})
 
 	go rs.routine()
@@ -98,7 +51,7 @@ func NewFactoryPacket(ctx context.Context, handle PayloadHandle) *UDPPacketFacto
 	return rs
 }
 
-func (c *UDPPacketFactory) showInfo(info string) {
+func (c *UdpPacketServer) showInfo(info string) {
 	fmt.Println(info)
 	c.mulUdpPacketList.Range(func(key, value interface{}) bool {
 		fmt.Println(key, value)
@@ -106,13 +59,13 @@ func (c *UDPPacketFactory) showInfo(info string) {
 	})
 }
 
-func (c *UDPPacketFactory) getMulPacket(connSeqId string) *mulUdpPacket {
+func (c *UdpPacketServer) getMulPacket(connSeqId string) *MulUdpPacket {
 	tmpObj, ok := c.mulUdpPacketList.Load(connSeqId)
 	if !ok {
 		return nil
 	}
 
-	obj, ok := tmpObj.(*mulUdpPacket)
+	obj, ok := tmpObj.(*MulUdpPacket)
 	if !ok || obj == nil {
 		ulog.ErrorF("inner error. %v", tmpObj)
 		return nil
@@ -121,7 +74,7 @@ func (c *UDPPacketFactory) getMulPacket(connSeqId string) *mulUdpPacket {
 	return obj
 }
 
-func (c *UDPPacketFactory) delMulPacket(connSeqId string) {
+func (c *UdpPacketServer) delMulPacket(connSeqId string) {
 	if obj := c.getMulPacket(connSeqId); obj != nil {
 		//ulog.InfoF("del packet %v\n", connSeqId)
 	} else {
@@ -131,7 +84,7 @@ func (c *UDPPacketFactory) delMulPacket(connSeqId string) {
 	c.mulUdpPacketList.Delete(connSeqId)
 }
 
-func (c *UDPPacketFactory) innerPushMulUdpPacket(pkt *UdpPacket) *mulUdpPacket {
+func (c *UdpPacketServer) innerPushMulUdpPacket(pkt *UdpPacket) *MulUdpPacket {
 	var connSeq = pkt.ConnSeqId()
 
 	var findObj = c.getMulPacket(connSeq)
@@ -140,7 +93,7 @@ func (c *UDPPacketFactory) innerPushMulUdpPacket(pkt *UdpPacket) *mulUdpPacket {
 
 		return findObj
 	} else {
-		var addObj = &mulUdpPacket{
+		var addObj = &MulUdpPacket{
 			addTime: time.Now(),
 		}
 		addObj.RecvPacket(pkt)
@@ -152,8 +105,8 @@ func (c *UDPPacketFactory) innerPushMulUdpPacket(pkt *UdpPacket) *mulUdpPacket {
 	}
 }
 
-func (c *UDPPacketFactory) mPushPacketData(addr net.UDPAddr, pktData []byte) {
-	if pkt, err := Deserialization(pktData); err != nil {
+func (c *UdpPacketServer) mPushPacketData(addr net.UDPAddr, pktData []byte) {
+	if pkt, err := c.Deserialization(pktData); err != nil {
 		ulog.ErrorF("Deserialization fail. %v %v", addr, err)
 	} else {
 		pkt.SetRemoteAddr(addr)
@@ -170,13 +123,16 @@ func (c *UDPPacketFactory) mPushPacketData(addr net.UDPAddr, pktData []byte) {
 			//	c.delMulPacket(pkt.ConnSeqId())
 			//}
 		} else {
-			c.handle(pkt.PayloadData())
+			var objMulPkt = &MulUdpPacket{addTime: time.Now()}
+			objMulPkt.RecvPacket(pkt)
+			c.handlePayload(objMulPkt, pkt.PayloadData())
+
 			c.lossCheck.Add(pkt.Seq())
 		}
 	}
 }
 
-func (c *UDPPacketFactory) PushPacketData(addr net.UDPAddr, pktData []byte) {
+func (c *UdpPacketServer) PushPacketData(addr net.UDPAddr, pktData []byte) {
 	c.mutexUdpPktBufferItemList.Lock()
 	defer c.mutexUdpPktBufferItemList.Unlock()
 
@@ -189,7 +145,7 @@ func (c *UDPPacketFactory) PushPacketData(addr net.UDPAddr, pktData []byte) {
 	})
 }
 
-func (c *UDPPacketFactory) mHandleAddItemBuffer() {
+func (c *UdpPacketServer) mHandleAddItemBuffer() {
 	c.mutexUdpPktBufferItemList.Lock()
 	defer c.mutexUdpPktBufferItemList.Unlock()
 
@@ -211,12 +167,12 @@ func (c *UDPPacketFactory) mHandleAddItemBuffer() {
 }
 
 // 检查分包接收完成或接收超时
-func (c *UDPPacketFactory) checkTimeout() {
+func (c *UdpPacketServer) checkTimeout() {
 	var now = time.Now()
 	var keys []interface{}
 
 	c.mulUdpPacketList.Range(func(key, value interface{}) bool {
-		obj, ok := value.(*mulUdpPacket)
+		obj, ok := value.(*MulUdpPacket)
 		if !ok || nil == obj {
 			keys = append(keys, key)
 			return true
@@ -224,15 +180,15 @@ func (c *UDPPacketFactory) checkTimeout() {
 
 		// 分包接收完整
 		if obj.IsRecvAllPacket() {
-			c.handle(obj.GetPacketData())
 			keys = append(keys, key)
+			c.handlePayload(obj, obj.GetPacketData())
 			return true
 		}
 
 		// 数据接收超时
 		if obj.IsTimeout(now) {
 			keys = append(keys, key)
-			ulog.ErrorF("timeout. %v, value: \n%v", key, obj)
+			c.handleTimeout(obj)
 			return true
 		}
 
@@ -249,7 +205,7 @@ func (c *UDPPacketFactory) checkTimeout() {
 	}
 }
 
-func (c *UDPPacketFactory) routine() {
+func (c *UdpPacketServer) routine() {
 	for {
 		select {
 		case <-c.ctx.Done():
@@ -260,5 +216,14 @@ func (c *UDPPacketFactory) routine() {
 
 			time.Sleep(time.Millisecond * 5)
 		}
+	}
+}
+
+func (c *UdpPacketServer) Deserialization(pktData []byte) (*UdpPacket, error) {
+	var pkt UdpPacket
+	if err := pkt.UnPacket(pktData); err != nil {
+		return nil, err
+	} else {
+		return &pkt, nil
 	}
 }

@@ -10,13 +10,14 @@ import (
 	"time"
 )
 
+// 打包解包测试
 func TestUdpPacket_Packet(t *testing.T) {
 	rand.Seed(time.Now().UnixNano())
 
 	data := []byte("hello world")
 	count := uint16(rand.Int()%math.MaxInt8) + 23
 	var srcPkt = &UdpPacket{
-		PktSeq:   uint16(rand.Int()),
+		PktSeq:   rand.Uint32(),
 		PktCount: count,
 		PktIndex: count - 1,
 		PktType:  unetio.PktTypeData,
