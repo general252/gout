@@ -69,8 +69,8 @@ func DebugF(format string, v ...interface{}) {
 
 func ErrorF(format string, v ...interface{}) {
 	//stack := getFileLine(5)
-	stack := ustack.CallStackList(2, 3)
-	var lines = "\nerror stack:\n"
+	stack := ustack.CallStackList(2, 1)
+	var lines = "\nlog error stack:\n"
 	for i := 0; i < len(stack); i++ {
 		lines += fmt.Sprintf(" %2d. %v\n", i+1, stack[i])
 	}
