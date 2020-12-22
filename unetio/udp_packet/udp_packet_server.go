@@ -7,6 +7,7 @@ import (
 	"github.com/general252/gout/laboratory/loss_detection"
 	"github.com/general252/gout/ulog"
 	"net"
+	"sort"
 	"sync"
 	"time"
 )
@@ -123,11 +124,17 @@ func (c *UdpPacketServer) mPushPacketData(addr net.UDPAddr, pktData []byte) {
 			//	c.delMulPacket(pkt.ConnSeqId())
 			//}
 		} else {
-			var objMulPkt = &MulUdpPacket{addTime: time.Now()}
-			objMulPkt.RecvPacket(pkt)
-			c.handlePayload(objMulPkt, pkt.PayloadData())
+			if true {
+				// 所有的包都需要缓存一下, 纠正包顺序
+				var mulPkt = c.innerPushMulUdpPacket(pkt)
+				_ = mulPkt
+			} else {
+				var objMulPkt = &MulUdpPacket{addTime: time.Now()}
+				objMulPkt.RecvPacket(pkt)
+				c.handlePayload(objMulPkt, pkt.PayloadData())
 
-			c.lossCheck.Add(pkt.Seq())
+				c.lossCheck.Add(pkt.Seq())
+			}
 		}
 	}
 }
@@ -170,6 +177,7 @@ func (c *UdpPacketServer) mHandleAddItemBuffer() {
 func (c *UdpPacketServer) checkTimeout() {
 	var now = time.Now()
 	var keys []interface{}
+	var vlus []*MulUdpPacket
 
 	c.mulUdpPacketList.Range(func(key, value interface{}) bool {
 		obj, ok := value.(*MulUdpPacket)
@@ -179,9 +187,10 @@ func (c *UdpPacketServer) checkTimeout() {
 		}
 
 		// 分包接收完整
-		if obj.IsRecvAllPacket() {
+		if obj.IsRecvAllPacket() && obj.IsTimeBuffer(now) {
 			keys = append(keys, key)
-			c.handlePayload(obj, obj.GetPacketData())
+			vlus = append(vlus, obj)
+			// c.handlePayload(obj, obj.GetPacketData())
 			return true
 		}
 
@@ -194,6 +203,14 @@ func (c *UdpPacketServer) checkTimeout() {
 
 		return true
 	})
+
+	sort.Slice(vlus, func(i, j int) bool {
+		return vlus[i].addTime.Sub(vlus[j].addTime) > 0
+	})
+
+	for i := 0; i < len(vlus); i++ {
+		c.handlePayload(vlus[i], vlus[i].GetPacketData())
+	}
 
 	for _, key := range keys {
 		connSeqId, ok := key.(string)

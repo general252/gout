@@ -24,9 +24,10 @@ func Client(port int, ms int) {
 		data[i] = uint8(i % math.MaxUint8)
 	}
 
+	cli := udp_packet.NewUdpPacketClient()
 	for {
 		for i := 0; i < 20; i++ {
-			pktArray := udp_packet.Serialization(data)
+			pktArray := cli.Serialization(data)
 
 			for _, udpPacket := range pktArray {
 				n, err := cliConn.Write(udpPacket.Packet())

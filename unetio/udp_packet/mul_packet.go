@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/general252/gout/ulog"
 	"github.com/general252/gout/unetio"
+	"math"
 	"sort"
 	"time"
 )
@@ -26,6 +27,14 @@ func (c *MulUdpPacket) IsRecvAllPacket() bool {
 		return false
 	}
 	return true
+}
+
+// IsTimeBuffer 缓存500ms
+func (c *MulUdpPacket) IsTimeBuffer(now time.Time) bool {
+	if now.Sub(c.addTime) > time.Millisecond*1200 {
+		return true
+	}
+	return false
 }
 
 // seq分包接收超时

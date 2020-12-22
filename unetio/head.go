@@ -8,10 +8,11 @@ import (
 )
 
 const (
+	MTU               = 1500 // 576
 	UdpPacketHeadSize = 12
 	// Internet上的标准MTU值为576字节
 	// unix网络编程第一卷里说：ipv4协议规定ip层的最小重组缓冲区大小为576
-	UdpPacketMaxSize        = 576 - 8 - 20
+	UdpPacketMaxSize        = MTU - 8 - 20
 	UdpPacketPayloadMaxSize = UdpPacketMaxSize - UdpPacketHeadSize
 
 	/**

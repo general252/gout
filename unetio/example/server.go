@@ -30,9 +30,14 @@ func Server(port int) {
 
 		var pktFactory = connMap[addr.String()]
 		if pktFactory == nil {
-			pktFactory = udp_packet.NewUdpPacketServer(context.TODO(), func(payload []byte) {
-				ulog.Info("收到数据: ", len(payload))
+			pktFactory = udp_packet.NewUdpPacketServer(context.TODO(), func(pktHeadInfo *udp_packet.MulUdpPacket, payload []byte) {
+
+			}, func(pktHeadInfo *udp_packet.MulUdpPacket) {
+				ulog.Info("收到数据: ", len(pktHeadInfo.GetPacketData()))
+			}, func(lossSeq uint32) {
+
 			})
+
 			connMap[addr.String()] = pktFactory
 		}
 
