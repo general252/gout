@@ -31,6 +31,9 @@ type UdpPacketServer struct {
 	mutexUdpPktBufferItemList sync.Mutex // 缓冲区锁
 
 	lossCheck *loss_detection.SeqCheck
+
+	curSeq          uint32
+	curSeqCheckTime time.Time
 }
 
 func NewUdpPacketServer(ctx context.Context, handlePayload PayloadHandle, handleTime TimeoutHandle, handleLoss loss_detection.HandLossSeq) *UdpPacketServer {
@@ -39,6 +42,9 @@ func NewUdpPacketServer(ctx context.Context, handlePayload PayloadHandle, handle
 		handlePayload:        handlePayload,
 		handleTimeout:        handleTime,
 		udpPktBufferItemList: list.New(),
+
+		curSeq:          0,
+		curSeqCheckTime: time.Unix(0, 0),
 	}
 
 	rs.lossCheck = loss_detection.NewSeqLossCheck(nil, ctx, func(lossSeq uint32) {
@@ -173,6 +179,88 @@ func (c *UdpPacketServer) mHandleAddItemBuffer() {
 	}
 }
 
+func (c *UdpPacketServer) checkTimeoutV2() {
+	var now = time.Now()
+	var keys []interface{}
+
+	if c.curSeqCheckTime.Unix() == 0 {
+		c.curSeqCheckTime = now
+	}
+
+	if now.Sub(c.curSeqCheckTime) > time.Second*2 {
+		c.curSeq++
+		c.curSeqCheckTime = now
+	}
+
+	for i := 0; i < 10; i++ {
+		var brk = false
+		c.mulUdpPacketList.Range(func(key, value interface{}) bool {
+			obj, ok := value.(*MulUdpPacket)
+			if !ok || nil == obj {
+				return true
+			}
+
+			firstPkg := obj.FirstPacket()
+			if firstPkg == nil {
+				return true
+			}
+
+			if firstPkg.PktSeq == c.curSeq {
+				if obj.IsRecvAllPacket() {
+					// 包接收结束
+					keys = append(keys, key)
+					c.handlePayload(obj, obj.GetPacketData())
+
+					c.curSeq++ // 下一个
+					c.curSeqCheckTime = now
+				} else if obj.IsTimeout(now) {
+					// 包超时了
+
+					c.curSeq++ // 下一个
+					c.curSeqCheckTime = now
+				} else {
+					// 包没有接收完
+				}
+
+				brk = true
+				return false
+			}
+
+			return true
+		})
+
+		if brk {
+			break
+		}
+	}
+
+	// 处理超时的
+	c.mulUdpPacketList.Range(func(key, value interface{}) bool {
+		obj, ok := value.(*MulUdpPacket)
+		if !ok || nil == obj {
+			keys = append(keys, key)
+			return true
+		}
+
+		if obj.IsTimeout(now) {
+			keys = append(keys, key)
+			c.handleTimeout(obj)
+			return true
+		}
+
+		return true
+	})
+
+	for _, key := range keys {
+		connSeqId, ok := key.(string)
+		if !ok {
+			ulog.ErrorF("inner error. %v", key)
+		} else {
+			c.delMulPacket(connSeqId)
+		}
+	}
+}
+
 // 检查分包接收完成或接收超时
 func (c *UdpPacketServer) checkTimeout() {
 	var now = time.Now()
@@ -229,7 +317,7 @@ func (c *UdpPacketServer) routine() {
 			return
 		default:
 			c.mHandleAddItemBuffer()
-			c.checkTimeout()
+			c.checkTimeoutV2()
 
 			time.Sleep(time.Millisecond * 5)
 		}

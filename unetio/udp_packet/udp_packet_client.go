@@ -16,7 +16,8 @@ func NewUdpPacketClient() *UdpPacketClient {
 	rand.Seed(time.Now().UnixNano())
 
 	return &UdpPacketClient{
-		seq: rand.Uint32(),
+		//seq: rand.Uint32(),
+		seq: 0,
 	}
 }
 
