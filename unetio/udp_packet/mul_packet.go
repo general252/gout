@@ -30,7 +30,7 @@ func (c *MulUdpPacket) IsRecvAllPacket() bool {
 
 // IsTimeBuffer 缓存500ms
 func (c *MulUdpPacket) IsTimeBuffer(now time.Time) bool {
-	if now.Sub(c.addTime) > time.Millisecond*1200 {
+	if now.Sub(c.addTime) > time.Millisecond*2000 {
 		return true
 	}
 	return false

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/general252/gout/laboratory/loss_detection"
 	"github.com/general252/gout/ulog"
+	"github.com/general252/gout/unetio"
 	"net"
 	"sort"
 	"sync"
@@ -34,6 +35,7 @@ type UdpPacketServer struct {
 
 	curSeq          uint32
 	curSeqCheckTime time.Time
+	haveFirstPacket bool
 }
 
 func NewUdpPacketServer(ctx context.Context, handlePayload PayloadHandle, handleTime TimeoutHandle, handleLoss loss_detection.HandLossSeq) *UdpPacketServer {
@@ -45,6 +47,7 @@ func NewUdpPacketServer(ctx context.Context, handlePayload PayloadHandle, handle
 
 		curSeq:          0,
 		curSeqCheckTime: time.Unix(0, 0),
+		haveFirstPacket: false,
 	}
 
 	rs.lossCheck = loss_detection.NewSeqLossCheck(nil, ctx, func(lossSeq uint32) {
@@ -116,6 +119,7 @@ func (c *UdpPacketServer) mPushPacketData(addr net.UDPAddr, pktData []byte) {
 	if pkt, err := c.Deserialization(pktData); err != nil {
 		ulog.ErrorF("Deserialization fail. %v %v", addr, err)
 	} else {
+		// ulog.InfoF("=== push udp packet %v mul: %v", pkt.PktSeq, pkt.IsMulPacket())
 		pkt.SetRemoteAddr(addr)
 
 		if pkt.IsMulPacket() {
@@ -183,25 +187,39 @@ func (c *UdpPacketServer) checkTimeoutV2() {
 	var now = time.Now()
 	var keys []interface{}
 
-	if c.curSeqCheckTime.Unix() == 0 {
-		c.curSeqCheckTime = now
-	}
-
-	if now.Sub(c.curSeqCheckTime) > time.Second*2 {
-		c.curSeq++
-		c.curSeqCheckTime = now
-	}
-
-	for i := 0; i < 10; i++ {
-		var brk = false
+	if c.haveFirstPacket == false {
 		c.mulUdpPacketList.Range(func(key, value interface{}) bool {
 			obj, ok := value.(*MulUdpPacket)
 			if !ok || nil == obj {
+				ulog.WarnF("erro packet type")
+				return true
+			}
+
+			c.curSeqCheckTime = now
+			c.curSeq = obj.GetSeq()
+			c.haveFirstPacket = true
+
+			ulog.InfoF("first udp packet %v", obj.GetSeq())
+			return false
+		})
+
+		if c.haveFirstPacket == false {
+			return
+		}
+	}
+
+	var findCurrSeqPacket = false
+	for i := 0; i < 10; i++ {
+		c.mulUdpPacketList.Range(func(key, value interface{}) bool {
+			obj, ok := value.(*MulUdpPacket)
+			if !ok || nil == obj {
+				ulog.WarnF("erro packet type")
 				return true
 			}
 
 			firstPkg := obj.FirstPacket()
 			if firstPkg == nil {
+				ulog.WarnF("no have first packet")
 				return true
 			}
 
@@ -213,23 +231,25 @@ func (c *UdpPacketServer) checkTimeoutV2() {
 
 					c.curSeq++ // 下一个
 					c.curSeqCheckTime = now
+					// ulog.WarnF("====================== b %v", c.curSeq)
 				} else if obj.IsTimeout(now) {
 					// 包超时了
 
 					c.curSeq++ // 下一个
 					c.curSeqCheckTime = now
+					ulog.WarnF("====================== c %v", c.curSeq)
 				} else {
 					// 包没有接收完
 				}
 
-				brk = true
+				findCurrSeqPacket = true
 				return false
 			}
 
 			return true
 		})
 
-		if brk {
+		if findCurrSeqPacket {
 			break
 		}
 	}
@@ -259,13 +279,22 @@ func (c *UdpPacketServer) checkTimeoutV2() {
 			c.delMulPacket(connSeqId)
 		}
 	}
+
+	if findCurrSeqPacket == false { // packetCount >= 2 &&
+		// 有数据包时, 检查curSeq并增加
+		if now.Sub(c.curSeqCheckTime) > unetio.MulUdpPacketTimeout {
+			c.curSeq++
+			c.curSeqCheckTime = now
+			ulog.WarnF("====================== a %v", c.curSeq)
+		}
+	}
 }
 
 // 检查分包接收完成或接收超时
 func (c *UdpPacketServer) checkTimeout() {
 	var now = time.Now()
 	var keys []interface{}
-	var vlus []*MulUdpPacket
+	var pktList []*MulUdpPacket
 
 	c.mulUdpPacketList.Range(func(key, value interface{}) bool {
 		obj, ok := value.(*MulUdpPacket)
@@ -277,7 +306,7 @@ func (c *UdpPacketServer) checkTimeout() {
 		// 分包接收完整
 		if obj.IsRecvAllPacket() && obj.IsTimeBuffer(now) {
 			keys = append(keys, key)
-			vlus = append(vlus, obj)
+			pktList = append(pktList, obj)
 			// c.handlePayload(obj, obj.GetPacketData())
 			return true
 		}
@@ -292,12 +321,12 @@ func (c *UdpPacketServer) checkTimeout() {
 		return true
 	})
 
-	sort.Slice(vlus, func(i, j int) bool {
-		return vlus[i].addTime.Sub(vlus[j].addTime) > 0
+	sort.Slice(pktList, func(i, j int) bool {
+		return pktList[i].GetSeq() > pktList[j].GetSeq()
 	})
 
-	for i := 0; i < len(vlus); i++ {
-		c.handlePayload(vlus[i], vlus[i].GetPacketData())
+	for i := 0; i < len(pktList); i++ {
+		c.handlePayload(pktList[i], pktList[i].GetPacketData())
 	}
 
 	for _, key := range keys {
@@ -318,6 +347,7 @@ func (c *UdpPacketServer) routine() {
 		default:
 			c.mHandleAddItemBuffer()
 			c.checkTimeoutV2()
+			//c.checkTimeout()
 
 			time.Sleep(time.Millisecond * 5)
 		}

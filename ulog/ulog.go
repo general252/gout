@@ -63,6 +63,20 @@ func InfoF(format string, v ...interface{}) {
 	logs.GetBeeLogger().Info(format, v...)
 }
 
+var infoTimesMap = make(map[string]int) // tag:times
+func InfoFWithTimes(tag string, times int, format string, v ...interface{}) {
+	vTimes, ok := infoTimesMap[tag]
+	if ok {
+		infoTimesMap[tag] = vTimes + 1
+	} else {
+		infoTimesMap[tag] = 1
+	}
+
+	if vTimes%times == 0 {
+		InfoF(format, v...)
+	}
+}
+
 func DebugF(format string, v ...interface{}) {
 	logs.GetBeeLogger().Debug(format, v...)
 }
