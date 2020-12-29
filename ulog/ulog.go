@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -29,7 +30,7 @@ func init() {
 	appName := strings.TrimRight(filename, filepath.Ext(filename))
 
 	_ = os.Mkdir("log", os.ModePerm)
-	logFilename := fmt.Sprintf("./log/%v_%v.log", appName, time.Now().Format("0102_150405"))
+	logFilename := fmt.Sprintf("./log/%v_%v_%v.log", appName, os.Getpid(), time.Now().Format("20060102_150405"))
 
 	configStr := fmt.Sprintf(`{"level":%v, "filename":"%v", "maxdays":%v}`, logs.LevelDebug, logFilename, 15)
 	if err := logs.SetLogger(logs.AdapterFile, configStr); err != nil {
@@ -63,17 +64,40 @@ func InfoF(format string, v ...interface{}) {
 	logs.GetBeeLogger().Info(format, v...)
 }
 
-var infoTimesMap = make(map[string]int) // tag:times
+var (
+	infoTimesMap = sync.Map{} // tag:times
+	errorTimeMap = sync.Map{} // tag:times
+)
+
+// InfoFWithTimes 每times次输出一次日志
 func InfoFWithTimes(tag string, times int, format string, v ...interface{}) {
-	vTimes, ok := infoTimesMap[tag]
+	var valueTimes = 0
+	objTimes, ok := infoTimesMap.Load(tag)
 	if ok {
-		infoTimesMap[tag] = vTimes + 1
+		valueTimes = objTimes.(int)
+		infoTimesMap.Store(tag, valueTimes+1)
 	} else {
-		infoTimesMap[tag] = 1
+		infoTimesMap.Store(tag, 1)
 	}
 
-	if vTimes%times == 0 {
+	if valueTimes%times == 0 {
 		InfoF(format, v...)
+	}
+}
+
+// ErrorFWithTimes 每times次输出一次日志
+func ErrorFWithTimes(tag string, times int, format string, v ...interface{}) {
+	var valueTimes = 0
+	objTimes, ok := errorTimeMap.Load(tag)
+	if ok {
+		valueTimes = objTimes.(int)
+		errorTimeMap.Store(tag, valueTimes+1)
+	} else {
+		errorTimeMap.Store(tag, 1)
+	}
+
+	if valueTimes%times == 0 {
+		ErrorF(format, v...)
 	}
 }
 
