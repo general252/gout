@@ -71,18 +71,25 @@ func (c *UdpSession) routine() {
 		case <-c.ctx.Done():
 			return
 		default:
+			var sleep = true
 			for i := 0; i < 1000; i++ {
-				if c.mHandlePacketBuffer() == 0 {
+				if c.mHandlePacketBuffer() != 0 {
+					sleep = false
+				} else {
 					break
 				}
 			}
 			for i := 0; i < 1000; i++ {
-				if c.checkPacket(now) == 0 {
+				if c.checkPacket(now) != 0 {
+					sleep = false
+				} else {
 					break
 				}
 			}
 
-			time.Sleep(time.Millisecond * 5)
+			if sleep {
+				time.Sleep(time.Millisecond * 2)
+			}
 		}
 	}
 }
@@ -94,7 +101,8 @@ func (c *UdpSession) mPopPacketBuffer() (*bytes.Buffer, error) {
 	if c.bufferList.Len() == 0 {
 		return nil, nil
 	}
-	//ulog.InfoFWithTimes("recv_packet_", 100, "=====================%v", c.bufferList.Len())
+	ulog.InfoFWithTimes("recv_packet_", 200, "udp buffer len ============%v, remote: %v",
+		c.bufferList.Len(), c.remoteAddr)
 	//ulog.InfoF("=====================%v", c.bufferList.Len())
 
 	var elm = c.bufferList.Front()

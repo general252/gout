@@ -9,4 +9,5 @@ require (
 	github.com/satori/go.uuid v1.2.0
 	github.com/shirou/gopsutil v2.20.8+incompatible
 	github.com/willf/bitset v1.1.11
+	golang.org/x/image v0.0.0-20201208152932-35266b937fa6
 )
