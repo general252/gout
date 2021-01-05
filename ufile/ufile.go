@@ -69,3 +69,5 @@ func IsExists(path string) bool {
 	}
 	return true
 }
+
+// https://github.com/mattetti/filebuffer
