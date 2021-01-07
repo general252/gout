@@ -59,25 +59,25 @@ func HttpDo(method, url, data string, headers map[string]string) ([]byte, error)
 }
 
 // HttpRequestJson http请求, context-type: "application/json; charset=utf-8"
-func HttpRequestJson(method string, url string, body *bytes.Buffer) ([]byte, error) {
+func HttpRequestJson(method string, url string, body []byte) ([]byte, error) {
 	return HttpRequestWithContextType(method, url, body, "application/json; charset=utf-8", nil)
 }
 
 // HttpRequestMultipartFormData http请求, context-type: "multipart/form-data"
-func HttpRequestMultipartFormData(method string, url string, body *bytes.Buffer) ([]byte, error) {
+func HttpRequestMultipartFormData(method string, url string, body []byte) ([]byte, error) {
 	return HttpRequestWithContextType(method, url, body, "multipart/form-data", nil)
 }
 
 // HttpRequestWithoutContextType http请求, no context-type
-func HttpRequestWithoutContextType(method string, url string, body *bytes.Buffer) ([]byte, error) {
+func HttpRequestWithoutContextType(method string, url string, body []byte) ([]byte, error) {
 	return HttpRequestWithContextType(method, url, body, "", nil)
 }
 
 // HttpRequestWithContextType http请求
-func HttpRequestWithContextType(method string, url string, body *bytes.Buffer, contextType string, headers map[string]string) ([]byte, error) {
+func HttpRequestWithContextType(method string, url string, body []byte, contextType string, headers map[string]string) ([]byte, error) {
 	var p io.Reader
 	if body != nil {
-		p = body
+		p = bytes.NewBuffer(body)
 	}
 	req, err := http.NewRequest(method, url, p)
 	if err != nil {

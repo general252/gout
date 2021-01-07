@@ -2,7 +2,6 @@ package unet
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -33,7 +32,7 @@ func ExampleHttpDo() {
 }
 
 func ExampleHttpRequestJson() {
-	url := fmt.Sprintf("%v/file/%v", BaseURL, fileId)
+	url := fmt.Sprintf("%v/file/%v", BaseURL, "fileId")
 	resp, err := HttpRequestJson(http.MethodGet, url, nil)
 	if err != nil {
 		log.Println(err)
@@ -70,7 +69,7 @@ func ExampleHttpRequestWithContextType() {
 }
 
 // getPostFileBody 获取上传文件的body, context-type
-func getPostFileBody(uploadFileKey string, fileFullPath string) (*bytes.Buffer, string, error) {
+func getPostFileBody(uploadFileKey string, fileFullPath string) ([]byte, string, error) {
 	fileData, err := ioutil.ReadFile(fileFullPath)
 	if err != nil {
 		return nil, "", err
@@ -89,5 +88,5 @@ func getPostFileBody(uploadFileKey string, fileFullPath string) (*bytes.Buffer, 
 
 	_, _ = part.Write(fileData)
 
-	return &resp, writer.FormDataContentType(), nil
+	return resp.Bytes(), writer.FormDataContentType(), nil
 }
