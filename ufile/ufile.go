@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 )
 
@@ -60,7 +61,7 @@ func SHA256File(path string) (string, error) {
 
 // 判断所给路径文件/文件夹是否存在
 func IsExists(path string) bool {
-	_, err := os.Stat(path) //os.Stat获取文件信息
+	_, err := os.Lstat(path) //os.Stat获取文件信息
 	if err != nil {
 		if os.IsExist(err) {
 			return true
@@ -68,6 +69,10 @@ func IsExists(path string) bool {
 		return false
 	}
 	return true
+}
+
+func ListDir(dirname string) ([]os.FileInfo, error) {
+	return ioutil.ReadDir(dirname)
 }
 
 // https://github.com/mattetti/filebuffer
