@@ -135,7 +135,7 @@ func init() {
 }
 
 // SetFileLogConfig 设置日志文件配置
-func SetFileLogConfig(enable bool, config FileConfig) error {
+func SetFileLogConfig(enable bool, config *FileConfig) error {
 	if enable == false {
 		err := logs.GetBeeLogger().DelLogger(logs.AdapterFile)
 		return err
@@ -158,7 +158,7 @@ func SetFileLogConfig(enable bool, config FileConfig) error {
 }
 
 // SetConsoleConfig 设置控制台配置
-func SetConsoleConfig(enable bool, config ConsoleConfig) error {
+func SetConsoleConfig(enable bool, config *ConsoleConfig) error {
 	if enable == false {
 		err := logs.GetBeeLogger().DelLogger(logs.AdapterConsole)
 		return err
