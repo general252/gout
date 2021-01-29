@@ -3,6 +3,7 @@ package unet
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"io"
 	"io/ioutil"
@@ -16,6 +17,9 @@ import (
 func HttpDo(method, url, data string, headers map[string]string) ([]byte, error) {
 	client := &http.Client{
 		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
 			DialContext: func(ctx context.Context, network, addr string) (conn net.Conn, e error) {
 				conn, err := net.DialTimeout(network, addr, time.Second*5) //设置建立连接超时
 				if err != nil {
@@ -94,6 +98,9 @@ func HttpRequestWithContextType(method string, url string, body []byte, contextT
 
 	cli := &http.Client{
 		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
 			DialContext: func(ctx context.Context, network, addr string) (conn net.Conn, e error) {
 				conn, err := net.DialTimeout(network, addr, time.Second*5) //设置建立连接超时
 				if err != nil {
