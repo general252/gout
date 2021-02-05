@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net"
@@ -131,4 +132,30 @@ func FormatJson(jsonData []byte) []byte {
 	} else {
 		return data
 	}
+}
+
+// GetRequestRealIp request real ip.
+func GetRequestRealIp(r *http.Request) (string, error) {
+	ip := r.Header.Get("X-Real-IP")
+	if net.ParseIP(ip) != nil {
+		return ip, nil
+	}
+
+	ip = r.Header.Get("X-Forward-For")
+	for _, i := range strings.Split(ip, ",") {
+		if net.ParseIP(i) != nil {
+			return i, nil
+		}
+	}
+
+	ip, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return "", err
+	}
+
+	if net.ParseIP(ip) != nil {
+		return ip, nil
+	}
+
+	return "", fmt.Errorf("no valid ip found")
 }
