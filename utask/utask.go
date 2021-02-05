@@ -9,21 +9,35 @@ import (
 )
 
 var (
-	cronTab *cron.Cron = nil
-	mux     sync.Mutex
+	cronTab      *cron.Cron = nil
+	cronLocation            = time.Local
+	mux          sync.Mutex
 )
+
+// SetLocation 设置时区
+func SetLocation(loc *time.Location) {
+	cronLocation = loc
+}
 
 // AddTaskEvery 添加任务. id: 任务标识
 func AddTaskEvery(everyDuration time.Duration, cmd func()) (int, error) {
 	mux.Lock()
 	defer mux.Unlock()
 
+	var spec = fmt.Sprintf("@every %v", everyDuration.String())
+	return AddCron(spec, cmd)
+}
+
+// AddCron AddCron("* * * * * ?", func() { })
+func AddCron(spec string, cmd func()) (int, error) {
+	mux.Lock()
+	defer mux.Unlock()
+
 	if cronTab == nil {
-		cronTab = cron.New(cron.WithSeconds())
+		cronTab = cron.New(cron.WithSeconds(), cron.WithLocation(cronLocation))
 		cronTab.Start()
 	}
 
-	var spec = fmt.Sprintf("@every %v", everyDuration.String())
 	id, err := cronTab.AddFunc(spec, cmd)
 
 	return int(id), err
