@@ -8,6 +8,8 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path/filepath"
+	"strings"
 )
 
 // MD5
@@ -73,6 +75,23 @@ func IsExists(path string) bool {
 
 func ListDir(dirname string) ([]os.FileInfo, error) {
 	return ioutil.ReadDir(dirname)
+}
+
+// Split 分割路径
+func Split(fullPath string) (dir, file, ext string) {
+	var tmpFile string
+
+	dir, tmpFile = filepath.Split(fullPath)
+	ext = filepath.Ext(tmpFile)
+
+	index := strings.LastIndex(tmpFile, ext)
+	if index >= 0 {
+		file = tmpFile[:index]
+	} else {
+		file = tmpFile
+	}
+
+	return
 }
 
 // https://github.com/mattetti/filebuffer
