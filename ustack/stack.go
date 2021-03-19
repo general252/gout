@@ -52,3 +52,30 @@ func CallStackFormatString(startDepth, count int) string {
 
 	return lines
 }
+
+// RoutineCount routine个数
+func RoutineCount() int {
+	return runtime.NumGoroutine()
+}
+
+// RoutineStacks 所有routine的调用堆栈
+func RoutineStacks() []byte {
+	// We don't know how big the buffer needs to be to collect
+	// all the goroutines. Start with 1 MB and try a few times, doubling each time.
+	// Give up and use a truncated trace if 64 MB is not enough.
+	buf := make([]byte, 1<<20)
+	for i := 0; ; i++ {
+		n := runtime.Stack(buf, true)
+		if n < len(buf) {
+			buf = buf[:n]
+			break
+		}
+		if len(buf) >= 64<<20 {
+			// Filled 64 MB - stop there.
+			break
+		}
+		buf = make([]byte, 2*len(buf))
+	}
+
+	return buf
+}

@@ -1,7 +1,6 @@
 package ulog
 
 import (
-	"fmt"
 	"github.com/astaxie/beego/logs"
 	"time"
 )
@@ -23,7 +22,6 @@ const (
 	AdapterLogWrapper = "uLogWrapper"
 )
 
-
 type LogHandler func(when time.Time, msg string, level LogLevel)
 
 type logWrapper struct {
@@ -31,7 +29,6 @@ type logWrapper struct {
 }
 
 func (l *logWrapper) Init(config string) error {
-	fmt.Println("uLogWrapper init ", config)
 	return nil
 }
 

@@ -2,10 +2,12 @@ package uerror
 
 import (
 	"fmt"
+	"github.com/general252/gout/ucode"
 	"github.com/general252/gout/ustack"
 )
 
 type uError struct {
+	code      ucode.Code
 	err       error
 	msg       []string
 	callstack []string
@@ -54,6 +56,22 @@ func (c *uError) Stack() []string {
 	return c.callstack
 }
 
+func (c *uError) WithError(err error) *uError {
+	if c != nil {
+		c.err = err
+	}
+
+	return c
+}
+
+func (c *uError) WithCode(code ucode.Code) *uError {
+	if c != nil {
+		c.code = code
+	}
+
+	return c
+}
+
 // AsUError convert to uError
 func AsUError(err error) (*uError, bool) {
 	uErr, ok := err.(*uError)
@@ -66,6 +84,22 @@ func AsUErr(err error) *uError {
 	return uErr
 }
 
+func GetOriError(err error) error {
+	if ue := AsUErr(err); ue != nil {
+		return ue.err
+	}
+
+	return err
+}
+
+func GetOriCode(err error) ucode.Code {
+	if ue := AsUErr(err); ue != nil {
+		return ue.code
+	}
+
+	return ucode.Unknown
+}
+
 func newUError(err error, msg string) *uError {
 	if uErr, ok := AsUError(err); ok {
 		return uErr.appendMessage(msg)
@@ -75,6 +109,7 @@ func newUError(err error, msg string) *uError {
 		callstack: ustack.CallStackList(3, 4),
 		err:       err,
 		msg:       []string{msg},
+		code:      ucode.Unknown,
 	}
 }
 

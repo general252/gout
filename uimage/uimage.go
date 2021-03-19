@@ -1,6 +1,7 @@
 package uimage
 
 import (
+	"bytes"
 	_ "golang.org/x/image/bmp"
 	"image"
 	_ "image/gif"
@@ -20,6 +21,13 @@ func Decode(imgFilePath string) (image.Image, string, error) {
 	return image.Decode(fp)
 }
 
+// DecodeBytes 解析图像(支持bmp/gig/jpeg/png)
+func DecodeBytes(imageData []byte) (image.Image, string, error) {
+	buffer := bytes.NewBuffer(imageData)
+
+	return image.Decode(buffer)
+}
+
 // DecodeConfig
 func DecodeConfig(imgFilePath string) (image.Config, string, error) {
 	fp, err := os.Open(imgFilePath)
@@ -29,6 +37,13 @@ func DecodeConfig(imgFilePath string) (image.Config, string, error) {
 	defer fp.Close()
 
 	return image.DecodeConfig(fp)
+}
+
+// DecodeConfigBytes
+func DecodeConfigBytes(imageData []byte) (image.Config, string, error) {
+	buffer := bytes.NewBuffer(imageData)
+
+	return image.DecodeConfig(buffer)
 }
 
 /*

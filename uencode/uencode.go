@@ -10,6 +10,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	uuid "github.com/satori/go.uuid"
+	"regexp"
 )
 
 func UUID() string {
@@ -52,6 +53,27 @@ func Base64Encode(data []byte) string {
 
 func Base64Decode(data string) ([]byte, error) {
 	return base64.StdEncoding.DecodeString(data)
+}
+
+// IsInvalidBase64 检查数据是无效的base64数据
+// true: data不是base64数据
+// false: data符合base64(注意: 不一定是base64数据, 也可能是hex数据)
+func IsInvalidBase64(str string) bool {
+	pattern := "^([A-Za-z0-9+/]{4})*([A-Za-z0-9+/]{4}|[A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{2}==)$"
+	matched, err := regexp.MatchString(pattern, str)
+	if err != nil {
+		return true
+	}
+
+	if !(len(str)%4 == 0 && matched) {
+		return true
+	}
+
+	_, err = base64.StdEncoding.DecodeString(str)
+	if err != nil {
+		return true
+	}
+	return false
 }
 
 func HmacSHA1(key []byte, data []byte) string {

@@ -134,6 +134,14 @@ func FormatJson(jsonData []byte) []byte {
 	}
 }
 
+func FormatJsonObject(v interface{}) []byte {
+	if data, err := json.MarshalIndent(v, "", "  "); err != nil {
+		return nil
+	} else {
+		return data
+	}
+}
+
 // GetRequestRealIp request real ip.
 func GetRequestRealIp(r *http.Request) (string, error) {
 	ip := r.Header.Get("X-Real-IP")
@@ -158,4 +166,31 @@ func GetRequestRealIp(r *http.Request) (string, error) {
 	}
 
 	return "", fmt.Errorf("no valid ip found")
+}
+
+// GetRequestClientType 终端类型
+func GetRequestClientType(r *http.Request) string {
+	var userAgent = r.Header.Get("User-Agent")
+	var cliType = ""
+	if strings.Contains(userAgent, "Android") {
+		cliType = "Android移动端"
+		if strings.Contains(userAgent, "MicroMessenger") {
+			cliType = "Android微信"
+		}
+	} else if strings.Contains(userAgent, "iPhone") {
+		cliType = "iPhone移动客户端"
+		if strings.Contains(userAgent, "MicroMessenger") {
+			cliType = "iPhone微信"
+		}
+	} else if strings.Contains(userAgent, "iPad") {
+		cliType = "iPad"
+	} else if strings.Contains(userAgent, "Windows") {
+		cliType = "Windows"
+	} else if strings.Contains(userAgent, "Linux") {
+		cliType = "Linux"
+	} else {
+		cliType = "UnKnow"
+	}
+
+	return cliType
 }
