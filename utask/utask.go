@@ -21,9 +21,6 @@ func SetLocation(loc *time.Location) {
 
 // AddTaskEvery 添加任务. id: 任务标识
 func AddTaskEvery(everyDuration time.Duration, cmd func()) (int, error) {
-	mux.Lock()
-	defer mux.Unlock()
-
 	var spec = fmt.Sprintf("@every %v", everyDuration.String())
 	return AddCron(spec, cmd)
 }
