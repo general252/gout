@@ -2,9 +2,11 @@ package uencode
 
 import (
 	"bytes"
+	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha1"
+	"crypto/sha256"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
@@ -68,7 +70,14 @@ func RSAGenerateKey(bits int) (priKey, pubKey string, err error) {
 // plainText 要加密的数据
 // pemPubKey pem格式公钥
 // 一个分组的大小 key size - 42. 例如bits: 384, 分组大小: 384/8-42=6
-func RSAEncrypt(plainText []byte, pemPubKey string) ([]byte, error) {
+func RSAEncrypt(plainText []byte, pemPubKey string) (rText []byte, err error) {
+	defer func() {
+		if er := recover(); er != nil {
+			rText = nil
+			err = fmt.Errorf("%v", er)
+		}
+	}()
+
 	blk, _ := pem.Decode([]byte(pemPubKey))
 	if blk == nil || len(blk.Bytes) <= 0 {
 		return nil, fmt.Errorf("decode pem fail")
@@ -125,7 +134,14 @@ func RSAEncrypt(plainText []byte, pemPubKey string) ([]byte, error) {
 // RSADecrypt RSA解密
 // cipherText 需要解密的byte数据
 // pemPriKey pem格式私钥
-func RSADecrypt(cipherText []byte, pemPriKey string) ([]byte, error) {
+func RSADecrypt(cipherText []byte, pemPriKey string) (rText []byte, err error) {
+	defer func() {
+		if er := recover(); er != nil {
+			rText = nil
+			err = fmt.Errorf("%v", er)
+		}
+	}()
+
 	// pem解码
 	block, _ := pem.Decode([]byte(pemPriKey))
 	if block == nil || len(block.Bytes) <= 0 {
@@ -213,4 +229,63 @@ func RSAValidatePemPrivateKey(pemPriKey string) bool {
 	}
 
 	return objPrivateKey.Validate() == nil
+}
+
+// RSASign 签名
+func RSASign(msg []byte, pemPriKey string) (rText []byte, err error) {
+	defer func() {
+		if er := recover(); er != nil {
+			rText = nil
+			err = fmt.Errorf("%v", er)
+		}
+	}()
+
+	block, _ := pem.Decode([]byte(pemPriKey))
+	if block == nil || len(block.Bytes) <= 0 {
+		return nil, fmt.Errorf("decode pem fail")
+	}
+
+	privateKey, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+	if err != nil {
+		return nil, err
+	}
+
+	hash := sha256.New()
+	hash.Write(msg)
+	hashed := hash.Sum(nil)
+
+	sign, err := rsa.SignPKCS1v15(rand.Reader, privateKey, crypto.SHA256, hashed)
+	if err != nil {
+		return nil, err
+	}
+
+	return sign, nil
+}
+
+// RSAVerifySign 验证签名
+func RSAVerifySign(msg []byte, sign []byte, pemPubKey string) (rc bool) {
+	defer func() {
+		if er := recover(); er != nil {
+			rc = false
+		}
+	}()
+
+	block, _ := pem.Decode([]byte(pemPubKey))
+	if block == nil || len(block.Bytes) <= 0 {
+		return false
+	}
+
+	publicInterface, err := x509.ParsePKIXPublicKey(block.Bytes)
+	if err != nil {
+		return false
+	}
+
+	publicKey := publicInterface.(*rsa.PublicKey)
+
+	hash := sha256.New()
+	hash.Write(msg)
+	hashed := hash.Sum(nil)
+
+	result := rsa.VerifyPKCS1v15(publicKey, crypto.SHA256, hashed, sign)
+	return result == nil
 }
