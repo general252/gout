@@ -17,15 +17,16 @@ import (
 // RSA 私钥加密: "github.com/wenzhenxi/gorsa"
 
 // EccGenerateKey 生成ECC私钥和公钥. c: 推荐elliptic.P256() ECC 164位的密钥产生的一个安全级相当于RSA 1024位密钥提供的保密强度
-func EccGenerateKey(c elliptic.Curve) (priKey, pubKey string, err error) {
+func EccGenerateKey(c elliptic.Curve, certInfo *CertInfo) (priKey, pubKey string, certPubKey string, err error) {
 	var outPriKey = bytes.Buffer{}
 	var outPubKey = bytes.Buffer{}
+	var outPubKeyCert = bytes.Buffer{}
 
 	//GenerateKey函数使用随机数据生成器random生成一对具有指定字位数的RSA密钥
 	//Reader是一个全局、共享的密码用强随机数生成器
 	privateKey, err := ecdsa.GenerateKey(c, rand.Reader)
 	if err != nil {
-		return "", "", err
+		return "", "", "", err
 	}
 
 	//log.Println("N: ", privateKey.N)
@@ -37,7 +38,7 @@ func EccGenerateKey(c elliptic.Curve) (priKey, pubKey string, err error) {
 		// 通过x509标准将得到的ecc私钥序列化为ASN.1 的 DER编码字符串
 		bytesX509PrivateKey, err := x509.MarshalECPrivateKey(privateKey)
 		if err != nil {
-			return "", "", err
+			return "", "", "", err
 		}
 		//使用pem格式对x509输出的内容进行编码
 
@@ -46,7 +47,7 @@ func EccGenerateKey(c elliptic.Curve) (priKey, pubKey string, err error) {
 			Type:  "ECC Private Key",
 			Bytes: bytesX509PrivateKey,
 		}); err != nil {
-			return "", "", err
+			return "", "", "", err
 		}
 	}
 
@@ -58,7 +59,7 @@ func EccGenerateKey(c elliptic.Curve) (priKey, pubKey string, err error) {
 		//X509对公钥编码
 		bytesX509PublicKey, err := x509.MarshalPKIXPublicKey(&publicKey)
 		if err != nil {
-			return "", "", err
+			return "", "", "", err
 		}
 
 		//pem格式编码
@@ -66,11 +67,21 @@ func EccGenerateKey(c elliptic.Curve) (priKey, pubKey string, err error) {
 			Type:  "ECC Public Key",
 			Bytes: bytesX509PublicKey,
 		}); err != nil {
-			return "", "", err
+			return "", "", "", err
 		}
 	}
 
-	return outPriKey.String(), outPubKey.String(), nil
+	//保存公钥cert
+	if certInfo != nil {
+		data, err := getCert(privateKey, certInfo)
+		if err != nil {
+			return "", "", "", err
+		}
+
+		outPubKeyCert.WriteString(data)
+	}
+
+	return outPriKey.String(), outPubKey.String(), outPubKeyCert.String(), nil
 }
 
 // EccSign 签名
@@ -120,17 +131,26 @@ func EccVerifySign(msg []byte, pemPubKey string, r, s []byte) (result bool) {
 		}
 	}()
 
-	block, _ := pem.Decode([]byte(pemPubKey))
-	if block == nil || len(block.Bytes) <= 0 {
-		return false
-	}
+	var publicKey *ecdsa.PublicKey
+	// parse public key
+	{
+		block, _ := pem.Decode([]byte(pemPubKey))
+		if block == nil || len(block.Bytes) <= 0 {
+			return false
+		}
 
-	publicKeyInterface, err := x509.ParsePKIXPublicKey(block.Bytes)
-	if err != nil {
-		return false
-	}
+		objCert, err := x509.ParseCertificate(block.Bytes)
+		if err != nil {
+			publicKeyInterface, err := x509.ParsePKIXPublicKey(block.Bytes)
+			if err != nil {
+				return false
+			}
 
-	publicKey := publicKeyInterface.(*ecdsa.PublicKey)
+			publicKey = publicKeyInterface.(*ecdsa.PublicKey)
+		} else {
+			publicKey = objCert.PublicKey.(*ecdsa.PublicKey)
+		}
+	}
 
 	hash := sha256.New()
 	hash.Write(msg)

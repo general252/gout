@@ -13,15 +13,16 @@ import (
 )
 
 // RSAGenerateKey 生成RSA私钥和公钥. bits 证书大小
-func RSAGenerateKey(bits int) (priKey, pubKey string, err error) {
+func RSAGenerateKey(bits int, certInfo *CertInfo) (priKey, pubKey string, certPubKey string, err error) {
 	var outPriKey = bytes.Buffer{}
 	var outPubKey = bytes.Buffer{}
+	var outPubKeyCert = bytes.Buffer{}
 
 	//GenerateKey函数使用随机数据生成器random生成一对具有指定字位数的RSA密钥
 	//Reader是一个全局、共享的密码用强随机数生成器
 	privateKey, err := rsa.GenerateKey(rand.Reader, bits)
 	if err != nil {
-		return "", "", err
+		return "", "", "", err
 	}
 
 	//log.Println("N: ", privateKey.N)
@@ -39,7 +40,7 @@ func RSAGenerateKey(bits int) (priKey, pubKey string, err error) {
 			Type:  "RSA Private Key",
 			Bytes: bytesX509PrivateKey,
 		}); err != nil {
-			return "", "", err
+			return "", "", "", err
 		}
 	}
 
@@ -51,7 +52,7 @@ func RSAGenerateKey(bits int) (priKey, pubKey string, err error) {
 		//X509对公钥编码
 		bytesX509PublicKey, err := x509.MarshalPKIXPublicKey(&publicKey)
 		if err != nil {
-			return "", "", err
+			return "", "", "", err
 		}
 
 		//pem格式编码
@@ -59,11 +60,21 @@ func RSAGenerateKey(bits int) (priKey, pubKey string, err error) {
 			Type:  "RSA Public Key",
 			Bytes: bytesX509PublicKey,
 		}); err != nil {
-			return "", "", err
+			return "", "", "", err
 		}
 	}
 
-	return outPriKey.String(), outPubKey.String(), nil
+	//保存公钥cert
+	if certInfo != nil {
+		data, err := getCert(privateKey, certInfo)
+		if err != nil {
+			return "", "", "", err
+		}
+
+		outPubKeyCert.WriteString(data)
+	}
+
+	return outPriKey.String(), outPubKey.String(), outPubKeyCert.String(), nil
 }
 
 // RSAEncrypt RSA加密

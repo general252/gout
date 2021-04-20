@@ -8,7 +8,7 @@ import (
 )
 
 func TestGenerateRSAKey(t *testing.T) {
-	priKey, pubKey, err := RSAGenerateKey(384)
+	priKey, pubKey, _, err := RSAGenerateKey(384, nil)
 	if err != nil {
 		t.Error(err)
 		return
@@ -33,9 +33,10 @@ func TestGenerateRSAKey(t *testing.T) {
 }
 
 func ExampleRSAGenerateKey() {
-	pri, pub, _ := RSAGenerateKey(1024)
+	pri, pub, cert, _ := RSAGenerateKey(1024, nil)
 	log.Println(pri)
 	log.Println(pub)
+	_ = cert
 
 	// output:
 

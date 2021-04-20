@@ -8,9 +8,10 @@ import (
 )
 
 func ExampleEccGenerateKey() {
-	pri, pub, _ := EccGenerateKey(elliptic.P256())
+	pri, pub, cert, _ := EccGenerateKey(elliptic.P256(), nil)
 	fmt.Println(pri)
 	fmt.Println(pub)
+	fmt.Println(cert)
 
 	// output:
 	//-----BEGIN ECC Private Key-----
