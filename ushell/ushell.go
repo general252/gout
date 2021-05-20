@@ -106,7 +106,7 @@ func ShellCommandStream(ctx context.Context, command string, cb func(msg []byte,
 	return err
 }
 
-func ShellCommandStreamV2(ctx context.Context, command string, cb func(stdoutPipe io.ReadCloser, stderrPipe io.ReadCloser)) error {
+func ShellCommandStreamV2(ctx context.Context, command string, cb func(stdinPipe io.WriteCloser, stdoutPipe io.ReadCloser, stderrPipe io.ReadCloser)) error {
 	if cb == nil {
 		return fmt.Errorf("cb is nil")
 	}
@@ -119,18 +119,26 @@ func ShellCommandStreamV2(ctx context.Context, command string, cb func(stdoutPip
 		cmd = exec.CommandContext(ctx, "sh", "-c", command)
 	}
 
+	stdin, err := cmd.StdinPipe()
+	if err != nil {
+		return err
+	}
+	defer stdin.Close()
+
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
 		return err
 	}
+	defer stderr.Close()
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return err
 	}
+	defer stdout.Close()
 
 	go func() {
-		cb(stdout, stderr)
+		cb(stdin, stdout, stderr)
 	}()
 
 	if err := cmd.Run(); err != nil {
