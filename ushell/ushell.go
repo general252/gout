@@ -69,9 +69,13 @@ func ShellCommandStream(command string, cb func(msg []byte, isError bool)) error
 	go func() {
 		defer wg.Done()
 
-		scanner := bufio.NewScanner(stdout)
-		for scanner.Scan() {
-			cb(scanner.Bytes(), false)
+		scanner := bufio.NewReader(stdout)
+		for true {
+			msg, _, err := scanner.ReadLine()
+			if err != nil {
+				return
+			}
+			cb(msg, false)
 		}
 	}()
 
@@ -79,9 +83,13 @@ func ShellCommandStream(command string, cb func(msg []byte, isError bool)) error
 	go func() {
 		defer wg.Done()
 
-		scanner := bufio.NewScanner(stderr)
-		for scanner.Scan() {
-			cb(scanner.Bytes(), true)
+		scanner := bufio.NewReader(stderr)
+		for true {
+			msg, _, err := scanner.ReadLine()
+			if err != nil {
+				return
+			}
+			cb(msg, true)
 		}
 	}()
 
