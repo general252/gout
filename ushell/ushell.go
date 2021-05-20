@@ -3,6 +3,7 @@ package ushell
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"fmt"
 	"github.com/axgle/mahonia"
 	"io"
@@ -42,7 +43,7 @@ func ShellCommand(command string) (string, string, error) {
 
 // ShellCommandStream("ls -ltr", func([]byte, bool){ })  isError: true是stderr输出, false: 是stdout输出
 // ShellCommandStream("SystemInfo", func([]byte, bool){ })
-func ShellCommandStream(command string, cb func(msg []byte, isError bool)) error {
+func ShellCommandStream(ctx context.Context, command string, cb func(msg []byte, isError bool)) error {
 	if cb == nil {
 		return fmt.Errorf("cb is nil")
 	}
@@ -50,9 +51,9 @@ func ShellCommandStream(command string, cb func(msg []byte, isError bool)) error
 	var cmd *exec.Cmd
 
 	if runtime.GOOS == "windows" {
-		cmd = exec.Command("cmd", "/C", command)
+		cmd = exec.CommandContext(ctx, "cmd", "/C", command)
 	} else {
-		cmd = exec.Command("sh", "-c", command)
+		cmd = exec.CommandContext(ctx, "sh", "-c", command)
 	}
 
 	stderr, err := cmd.StderrPipe()
@@ -105,7 +106,7 @@ func ShellCommandStream(command string, cb func(msg []byte, isError bool)) error
 	return err
 }
 
-func ShellCommandStreamV2(command string, cb func(stdoutPipe io.ReadCloser, stderrPipe io.ReadCloser)) error {
+func ShellCommandStreamV2(ctx context.Context, command string, cb func(stdoutPipe io.ReadCloser, stderrPipe io.ReadCloser)) error {
 	if cb == nil {
 		return fmt.Errorf("cb is nil")
 	}
@@ -113,9 +114,9 @@ func ShellCommandStreamV2(command string, cb func(stdoutPipe io.ReadCloser, stde
 	var cmd *exec.Cmd
 
 	if runtime.GOOS == "windows" {
-		cmd = exec.Command("cmd", "/C", command)
+		cmd = exec.CommandContext(ctx, "cmd", "/C", command)
 	} else {
-		cmd = exec.Command("sh", "-c", command)
+		cmd = exec.CommandContext(ctx, "sh", "-c", command)
 	}
 
 	stderr, err := cmd.StderrPipe()
@@ -128,7 +129,9 @@ func ShellCommandStreamV2(command string, cb func(stdoutPipe io.ReadCloser, stde
 		return err
 	}
 
-	cb(stdout, stderr)
+	go func() {
+		cb(stdout, stderr)
+	}()
 
 	if err := cmd.Run(); err != nil {
 		return err
@@ -138,7 +141,7 @@ func ShellCommandStreamV2(command string, cb func(stdoutPipe io.ReadCloser, stde
 }
 
 // OpenUri open uri on browser
-func OpenUri(uri string) error {
+func OpenUri(ctx context.Context, uri string) error {
 	var commands = map[string]string{
 		"windows": "cmd /c start",
 		"darwin":  "open",
@@ -153,7 +156,7 @@ func OpenUri(uri string) error {
 	cmdParams := strings.Split(run, " ")
 	cmdParams = append(cmdParams, uri)
 
-	cmd := exec.Command(cmdParams[0], cmdParams[1:]...)
+	cmd := exec.CommandContext(ctx, cmdParams[0], cmdParams[1:]...)
 	//cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 
 	return cmd.Run()
