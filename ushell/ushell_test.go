@@ -21,7 +21,8 @@ func (c *myBuffer) Read(p []byte) (n int, err error) {
 func ExampleShellCommandStreamV2() {
 	var buf = &myBuffer{buf: bytes.NewBufferString("hello")}
 
-	_ = ShellCommandStreamV2(context.TODO(), "ls -l", func(c *exec.Cmd, stdoutPipe io.ReadCloser, stderrPipe io.ReadCloser) {
+	_ = ShellCommandStreamV2(context.TODO(), "ls -l", func(stdoutPipe io.ReadCloser, stderrPipe io.ReadCloser) {
+	}, func(c *exec.Cmd) {
 		c.Stdin = buf
 	})
 
