@@ -12,6 +12,10 @@ import (
 
 // Compress 压缩 使用gzip压缩成tar.gz
 func Compress(files []string, dest string, progress Progress) error {
+	if files == nil || len(files) == 0 {
+		return fmt.Errorf("nof file")
+	}
+
 	d, err := os.Create(dest)
 	if err != nil {
 		return err
@@ -35,7 +39,13 @@ func Compress(files []string, dest string, progress Progress) error {
 	}
 
 	basePath := getSamplePart(newFiles)
-	basePath = filepath.Clean(basePath)
+	if len(newFiles) == 1 {
+		basePath = filepath.Dir(basePath)
+		basePath = filepath.Clean(basePath) + string(os.PathSeparator)
+	} else {
+		basePath = filepath.Clean(basePath)
+	}
+
 	for _, file := range newFiles {
 		err := filepath.Walk(file, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
@@ -193,6 +203,8 @@ func getSamplePart(arr []string) string {
 
 	var end = false
 	for i := 0; i < minLength; i++ {
+		n = i
+
 		ch := arr[0][i]
 		for _, s := range arr {
 			if ch != s[i] {
@@ -203,12 +215,10 @@ func getSamplePart(arr []string) string {
 
 		if end {
 			break
-		} else {
-			n = i
 		}
 	}
 
-	return arr[0][:n+1]
+	return arr[0][:n]
 }
 
 // getTotalSize 获取文件大小

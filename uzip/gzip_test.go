@@ -25,6 +25,15 @@ func ExampleCompress() {
 	//
 }
 
+func ExampleCompress2() {
+	_ = Compress([]string{"F:/ludashi.png", "E:\\\\test\\main.go"}, "E:/abc.gzip", func(progress float64, readSize int64, totalSize int64) {
+		log.Println(progress, readSize, totalSize)
+	})
+
+	// output:
+	//
+}
+
 func ExampleDeCompress() {
 	err := DeCompress("E:/abc.gzip", "E:/tmp", func(progress float64, readSize int64, totalSize int64) {
 		log.Println(progress, readSize, totalSize)
