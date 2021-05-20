@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/axgle/mahonia"
+	"io"
 	"os/exec"
 	"runtime"
 	"strings"
@@ -69,13 +70,14 @@ func ShellCommandStream(command string, cb func(msg []byte, isError bool)) error
 	go func() {
 		defer wg.Done()
 
-		scanner := bufio.NewReader(stdout)
+		buffer := make([]byte, 65535)
+		reader := bufio.NewReader(stdout)
 		for true {
-			msg, _, err := scanner.ReadLine()
+			n, err := reader.Read(buffer)
 			if err != nil {
 				return
 			}
-			cb(msg, false)
+			cb(buffer[:n], false)
 		}
 	}()
 
@@ -83,13 +85,14 @@ func ShellCommandStream(command string, cb func(msg []byte, isError bool)) error
 	go func() {
 		defer wg.Done()
 
-		scanner := bufio.NewReader(stderr)
+		buffer := make([]byte, 65535)
+		reader := bufio.NewReader(stderr)
 		for true {
-			msg, _, err := scanner.ReadLine()
+			n, err := reader.Read(buffer)
 			if err != nil {
 				return
 			}
-			cb(msg, true)
+			cb(buffer[:n], true)
 		}
 	}()
 
@@ -98,6 +101,38 @@ func ShellCommandStream(command string, cb func(msg []byte, isError bool)) error
 	}
 
 	wg.Wait()
+
+	return err
+}
+
+func ShellCommandStreamV2(command string, cb func(stdoutPipe io.ReadCloser, stderrPipe io.ReadCloser)) error {
+	if cb == nil {
+		return fmt.Errorf("cb is nil")
+	}
+
+	var cmd *exec.Cmd
+
+	if runtime.GOOS == "windows" {
+		cmd = exec.Command("cmd", "/C", command)
+	} else {
+		cmd = exec.Command("sh", "-c", command)
+	}
+
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		return err
+	}
+
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return err
+	}
+
+	cb(stdout, stderr)
+
+	if err := cmd.Run(); err != nil {
+		return err
+	}
 
 	return err
 }
