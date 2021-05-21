@@ -17,7 +17,7 @@ func ExampleGetSamplePart() {
 }
 
 func ExampleCompress() {
-	_ = Compress([]string{"E://backup", "E:/c.txt", "E:\\\\test\\main.go"}, "E:/abc.gzip", func(progress float64, readSize int64, totalSize int64) {
+	_ = Compress([]string{"E:\\test\\c.txt", "E:\\test\\backup"}, "E:\\test\\test.tar.gz", func(progress float64, readSize int64, totalSize int64) {
 		log.Println(progress, readSize, totalSize)
 	})
 
@@ -26,7 +26,7 @@ func ExampleCompress() {
 }
 
 func ExampleCompress2() {
-	_ = Compress([]string{"F:/ludashi.png", "E:\\\\test\\main.go"}, "E:/abc.gzip", func(progress float64, readSize int64, totalSize int64) {
+	_ = Compress([]string{"E:\\test\\backup\\a.txt"}, "E:\\test\\a.tar.gz", func(progress float64, readSize int64, totalSize int64) {
 		log.Println(progress, readSize, totalSize)
 	})
 
@@ -35,7 +35,7 @@ func ExampleCompress2() {
 }
 
 func ExampleDeCompress() {
-	err := DeCompress("E:/abc.gzip", "E:/tmp", func(progress float64, readSize int64, totalSize int64) {
+	err := DeCompress("E:\\test\\test.tar.gz", "E:\\test\\out", func(progress float64, readSize int64, totalSize int64) {
 		log.Println(progress, readSize, totalSize)
 	})
 	log.Println(err)

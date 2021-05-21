@@ -39,11 +39,14 @@ func Compress(files []string, dest string, progress Progress) error {
 	}
 
 	basePath := getSamplePart(newFiles)
-	if len(newFiles) == 1 {
-		basePath = filepath.Dir(basePath)
-		basePath = filepath.Clean(basePath) + string(os.PathSeparator)
-	} else {
+	{
+		if len(newFiles) == 1 {
+			basePath = filepath.Dir(basePath)
+		}
 		basePath = filepath.Clean(basePath)
+		if strings.HasSuffix(basePath, string(os.PathSeparator)) == false {
+			basePath = basePath + string(os.PathSeparator)
+		}
 	}
 
 	for _, file := range newFiles {
