@@ -3,40 +3,9 @@ package upool
 import (
 	"context"
 	"fmt"
-	"github.com/general252/gout/uencode"
 	"sync"
 	"time"
 )
-
-type PoolHook interface {
-	ID() string
-	Write(data *PoolItem) error
-}
-
-type HookPoolItem func(data *PoolItem) error
-type defaultHook struct {
-	id string
-	h  HookPoolItem
-}
-
-func NewDefaultHook(h HookPoolItem) *defaultHook {
-	return &defaultHook{
-		id: uencode.UUID(),
-		h:  h,
-	}
-}
-
-func (tis *defaultHook) ID() string {
-	return tis.id
-}
-
-func (tis *defaultHook) Write(data *PoolItem) error {
-	if tis.h == nil {
-		return fmt.Errorf("handle is nil")
-	}
-
-	return tis.h(data)
-}
 
 type PoolItem struct {
 	Level    int         `json:"level"`
@@ -56,7 +25,16 @@ type UPool struct {
 	hooks sync.Map
 }
 
+const (
+	defaultPoolSize = 1000
+)
+
+// NewUPool new pool, s: pool buffer size, 1000
 func NewUPool(s int64) *UPool {
+	if s <= 0 {
+		s = defaultPoolSize
+	}
+
 	ctx, cancel := context.WithCancel(context.TODO())
 	c := &UPool{
 		msgChan: make(chan *PoolItem, s),
@@ -75,56 +53,83 @@ func NewUPool(s int64) *UPool {
 	return c
 }
 
-func (tis *UPool) start() {
-	defer func() {
-		tis.wg.Done()
-	}()
-
-	for {
-		select {
-		case <-tis.ctx.Done():
-			return
-		case msg := <-tis.msgChan:
-			tis.hooks.Range(func(key, value interface{}) bool {
-				h, ok := value.(PoolHook)
-				if ok && h != nil {
-					_ = h.Write(msg)
-				}
-				return true
-			})
-
-			tis.pool.Put(msg)
-		}
-	}
-}
-
 func (tis *UPool) Close() {
 	tis.cancel()
 	tis.wg.Wait()
 }
 
+// AddHook add hook
 func (tis *UPool) AddHook(hook PoolHook) {
 	tis.hooks.Store(hook.ID(), hook)
 }
 
+// AddHook remove hook by hook id
 func (tis *UPool) RemoveHook(hook PoolHook) {
 	tis.hooks.Delete(hook.ID())
 }
 
+// Write write item, if pool is full will error
 func (tis *UPool) Write(data *PoolItem) error {
 	var size = cap(tis.msgChan)
 	var count = len(tis.msgChan)
-	if count+100 > size {
+	if count == size {
 		return fmt.Errorf("pool full %v / %v", count, size)
 	}
 
+	tis.WriteSync(data)
+
+	return nil
+}
+
+// WriteSync write item, if pool is full will wait chan
+func (tis *UPool) WriteSync(data *PoolItem) {
 	obj := tis.pool.Get().(*PoolItem)
 	{
 		obj.Msg = data.Msg
 		obj.Level = data.Level
 		obj.When = data.When
 	}
-	tis.msgChan <- obj
 
-	return nil
+	tis.msgChan <- obj
+}
+
+func (tis *UPool) write(data *PoolItem) {
+	tis.hooks.Range(func(key, value interface{}) bool {
+		h, ok := value.(PoolHook)
+		if ok && h != nil {
+			_ = h.Write(data)
+		}
+		return true
+	})
+}
+
+// start go routine
+func (tis *UPool) start() {
+	defer func() {
+		tis.wg.Done()
+	}()
+
+	var handleMsg = func() {
+		// 处理剩余的信息
+		n := len(tis.msgChan)
+		for i := 0; i < n; i++ {
+			msg := <-tis.msgChan
+
+			tis.write(msg)
+			tis.pool.Put(msg)
+		}
+	}
+
+	for {
+		select {
+		case <-tis.ctx.Done():
+			handleMsg()
+			return
+		case msg := <-tis.msgChan:
+			tis.write(msg)
+			tis.pool.Put(msg)
+
+			handleMsg()
+		}
+	}
 }
