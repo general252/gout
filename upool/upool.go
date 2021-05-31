@@ -23,21 +23,23 @@ type UPool struct {
 	wg     sync.WaitGroup
 
 	hooks sync.Map
+
+	opt poolOptions
 }
 
-const (
-	defaultPoolSize = 1000
-)
-
 // NewUPool new pool, s: pool buffer size, 1000
-func NewUPool(s int64) *UPool {
-	if s <= 0 {
-		s = defaultPoolSize
+func NewUPool(opts ...PoolOption) *UPool {
+	var poolOpt = poolOptions{
+		poolSize:      defaultPoolSize,
+		syncWriteIdle: defaultSyncWriteIdle,
+	}
+	for _, opt := range opts {
+		opt.apply(&poolOpt)
 	}
 
 	ctx, cancel := context.WithCancel(context.TODO())
 	c := &UPool{
-		msgChan: make(chan *PoolItem, s),
+		msgChan: make(chan *PoolItem, poolOpt.poolSize),
 		ctx:     ctx,
 		cancel:  cancel,
 		pool: &sync.Pool{
@@ -45,6 +47,7 @@ func NewUPool(s int64) *UPool {
 				return &PoolItem{}
 			},
 		},
+		opt: poolOpt,
 	}
 
 	c.wg.Add(1)
@@ -70,19 +73,6 @@ func (tis *UPool) RemoveHook(hook PoolHook) {
 
 // Write write item, if pool is full will error
 func (tis *UPool) Write(data *PoolItem) error {
-	var size = cap(tis.msgChan)
-	var count = len(tis.msgChan)
-	if count == size {
-		return fmt.Errorf("pool full %v / %v", count, size)
-	}
-
-	tis.WriteSync(data)
-
-	return nil
-}
-
-// WriteSync write item, if pool is full will wait chan
-func (tis *UPool) WriteSync(data *PoolItem) {
 	obj := tis.pool.Get().(*PoolItem)
 	{
 		obj.Msg = data.Msg
@@ -90,7 +80,34 @@ func (tis *UPool) WriteSync(data *PoolItem) {
 		obj.When = data.When
 	}
 
-	tis.msgChan <- obj
+	select {
+	case tis.msgChan <- obj:
+		// ok
+	default:
+		tis.pool.Put(obj)
+		return fmt.Errorf("write fail")
+	}
+
+	return nil
+}
+
+// WriteSync write item, if pool is full will wait chan
+func (tis *UPool) WriteSync(data *PoolItem) error {
+	obj := tis.pool.Get().(*PoolItem)
+	{
+		obj.Msg = data.Msg
+		obj.Level = data.Level
+		obj.When = data.When
+	}
+
+	select {
+	case tis.msgChan <- obj:
+		// ok
+		return nil
+	case <-time.After(tis.opt.syncWriteIdle):
+		tis.pool.Put(obj)
+		return fmt.Errorf("timeout")
+	}
 }
 
 func (tis *UPool) write(data *PoolItem) {
