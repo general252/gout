@@ -2,12 +2,16 @@ package unet
 
 import (
 	"bytes"
+	"context"
+	"crypto/tls"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"mime/multipart"
+	"net"
 	"net/http"
 	"path/filepath"
+	"time"
 )
 
 var (
@@ -89,4 +93,42 @@ func getPostFileBody(uploadFileKey string, fileFullPath string) ([]byte, string,
 	_, _ = part.Write(fileData)
 
 	return resp.Bytes(), writer.FormDataContentType(), nil
+}
+
+func ExampleHttpRequestJsonWithHeader() {
+	resp, err := HttpRequestJsonWithHeader(http.MethodPost, "url", nil, map[string]string{
+		"Authorization": "abc",
+	})
+	_, _ = resp, err
+
+	// output:
+	//
+}
+
+func ExampleHttpRequestJsonWithClient() {
+	cli := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+			DialContext: func(ctx context.Context, network, addr string) (conn net.Conn, e error) {
+				conn, err := net.DialTimeout(network, addr, time.Second*5) //设置建立连接超时
+				if err != nil {
+					return nil, err
+				}
+				return conn, nil
+			},
+		},
+	}
+
+	for i := 0; i < 100; i++ {
+		resp, err := HttpRequestJsonWithClient(http.MethodPost, "url", nil, nil, cli)
+		if err != nil {
+			return
+		}
+		log.Println(FormatJsonString(resp))
+	}
+
+	// output:
+
 }

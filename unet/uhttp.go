@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
-	"encoding/json"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net"
@@ -68,6 +66,11 @@ func HttpRequestJson(method string, url string, body []byte) ([]byte, error) {
 	return HttpRequestWithContextType(method, url, body, "application/json; charset=utf-8", nil)
 }
 
+// HttpRequestJsonWithHeader http请求, context-type: "application/json; charset=utf-8"
+func HttpRequestJsonWithHeader(method string, url string, body []byte, headers map[string]string) ([]byte, error) {
+	return HttpRequestWithContextType(method, url, body, "application/json; charset=utf-8", headers)
+}
+
 // HttpRequestMultipartFormData http请求, context-type: "multipart/form-data"
 func HttpRequestMultipartFormData(method string, url string, body []byte) ([]byte, error) {
 	return HttpRequestWithContextType(method, url, body, "multipart/form-data", nil)
@@ -121,76 +124,28 @@ func HttpRequestWithContextType(method string, url string, body []byte, contextT
 	return ioutil.ReadAll(resp.Body)
 }
 
-func FormatJson(jsonData []byte) []byte {
-	var obj interface{}
-	if err := json.Unmarshal(jsonData, &obj); err != nil {
-		return nil
+// HttpRequestJsonWithClient http请求, context-type: "application/json; charset=utf-8"
+func HttpRequestJsonWithClient(method string, url string, body []byte, headers map[string]string, cli *http.Client) ([]byte, error) {
+	var p io.Reader
+	if body != nil {
+		p = bytes.NewBuffer(body)
 	}
-
-	if data, err := json.MarshalIndent(obj, "", "  "); err != nil {
-		return nil
-	} else {
-		return data
-	}
-}
-
-func FormatJsonObject(v interface{}) []byte {
-	if data, err := json.MarshalIndent(v, "", "  "); err != nil {
-		return nil
-	} else {
-		return data
-	}
-}
-
-// GetRequestRealIp request real ip.
-func GetRequestRealIp(r *http.Request) (string, error) {
-	ip := r.Header.Get("X-Real-IP")
-	if net.ParseIP(ip) != nil {
-		return ip, nil
-	}
-
-	ip = r.Header.Get("X-Forward-For")
-	for _, i := range strings.Split(ip, ",") {
-		if net.ParseIP(i) != nil {
-			return i, nil
-		}
-	}
-
-	ip, _, err := net.SplitHostPort(r.RemoteAddr)
+	req, err := http.NewRequest(method, url, p)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	if net.ParseIP(ip) != nil {
-		return ip, nil
+	req.Header.Add("Content-Type", "application/json; charset=utf-8")
+
+	for key, value := range headers {
+		req.Header.Set(key, value)
 	}
 
-	return "", fmt.Errorf("no valid ip found")
-}
-
-// GetRequestClientType 终端类型
-func GetRequestClientType(r *http.Request) string {
-	var userAgent = r.Header.Get("User-Agent")
-	var cliType = ""
-	if strings.Contains(userAgent, "Android") {
-		cliType = "Android移动端"
-		if strings.Contains(userAgent, "MicroMessenger") {
-			cliType = "Android微信"
-		}
-	} else if strings.Contains(userAgent, "iPhone") {
-		cliType = "iPhone移动客户端"
-		if strings.Contains(userAgent, "MicroMessenger") {
-			cliType = "iPhone微信"
-		}
-	} else if strings.Contains(userAgent, "iPad") {
-		cliType = "iPad"
-	} else if strings.Contains(userAgent, "Windows") {
-		cliType = "Windows"
-	} else if strings.Contains(userAgent, "Linux") {
-		cliType = "Linux"
-	} else {
-		cliType = "UnKnow"
+	resp, err := cli.Do(req)
+	if err != nil {
+		return nil, err
 	}
+	defer resp.Body.Close()
 
-	return cliType
+	return ioutil.ReadAll(resp.Body)
 }
