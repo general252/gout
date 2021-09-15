@@ -43,3 +43,13 @@ func ExampleDeCompress() {
 	// output:
 	//
 }
+
+func ExampleCompress3() {
+	err := DeCompress(`C:\Users\tony\Desktop\template.tar.gz`, `C:\Users\tony\Desktop\out`, func(progress float64, readSize int64, totalSize int64) {
+		log.Println(progress, readSize, totalSize)
+	})
+	log.Println(err)
+
+	// output:
+	//
+}

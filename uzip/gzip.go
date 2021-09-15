@@ -127,23 +127,36 @@ func DeCompress(tarFile, dest string, progress Progress) error {
 		}
 
 		filename := fmt.Sprintf("%v/%v", dest, hdr.Name)
+		isDir := hdr.Typeflag == tar.TypeDir
 
-		file, err := createFile(filename)
+		file, err := createFile(filename, isDir)
 		if err != nil {
 			return err
 		}
-
-		_, _ = io.Copy(file, tr)
-		file.Close()
+		if !isDir {
+			_, err = io.Copy(file, tr)
+			if err != nil {
+				return err
+			}
+			file.Close()
+		}
 	}
 	return nil
 }
 
-func createFile(name string) (*os.File, error) {
+func createFile(name string, isDir bool) (*os.File, error) {
 	name = filepath.Clean(name)
-	err := os.MkdirAll(string([]rune(name)[0:strings.LastIndex(name, string(os.PathSeparator))]), 0644)
-	if err != nil {
-		return nil, err
+	if isDir {
+		err := os.MkdirAll(name, 0644)
+		if err != nil {
+			return nil, err
+		}
+		return nil, nil
+	} else {
+		err := os.MkdirAll(string([]rune(name)[0:strings.LastIndex(name, string(os.PathSeparator))]), 0644)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return os.Create(name)
