@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -22,26 +23,29 @@ func Compress(files []string, dest string, progress Progress) error {
 	}
 	defer d.Close()
 
-	gw := gzip.NewWriter(d)
-	defer gw.Close()
-
-	tw := tar.NewWriter(gw)
-	defer tw.Close()
-
 	var newFiles []string
 	for _, file := range files {
 		newFiles = append(newFiles, filepath.Clean(file))
 	}
 
+	// 进度
 	progressReader := NewProcessReader(progress)
 	if progressReader.totalSize, err = getTotalSize(newFiles); err != nil {
 		return err
 	}
 
+	// 计算顶层目录
 	basePath := getSamplePart(newFiles)
 	{
 		if len(newFiles) == 1 {
-			basePath = filepath.Dir(basePath)
+			ifo, err := os.Lstat(basePath)
+			if err != nil {
+				return err
+			}
+
+			if !ifo.IsDir() {
+				basePath = filepath.Dir(basePath)
+			}
 		}
 		basePath = filepath.Clean(basePath)
 		if strings.HasSuffix(basePath, string(os.PathSeparator)) == false {
@@ -49,6 +53,8 @@ func Compress(files []string, dest string, progress Progress) error {
 		}
 	}
 
+	// 收集压缩的文件
+	var fileList []string
 	for _, file := range newFiles {
 		err := filepath.Walk(file, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
@@ -56,35 +62,59 @@ func Compress(files []string, dest string, progress Progress) error {
 			}
 
 			if info.IsDir() {
-				return err
+				return nil
 			}
 
-			header, err := tar.FileInfoHeader(info, "")
-			if err != nil {
-				return err
-			}
-
-			header.Name = strings.TrimPrefix(filepath.Clean(path), basePath)
-			if err = tw.WriteHeader(header); err != nil {
-				return err
-			}
-
-			if f, err := os.Open(path); err != nil {
-				return err
-			} else {
-				defer f.Close()
-
-				progressReader.SetReader(f)
-
-				if _, err = io.Copy(tw, progressReader); err != nil {
-					return err
-				}
-			}
-
-			return err
+			fileList = append(fileList, path)
+			return nil
 		})
 
 		if err != nil {
+			return err
+		}
+	}
+
+	gw := gzip.NewWriter(d)
+	defer gw.Close()
+
+	tw := tar.NewWriter(gw)
+	defer tw.Close()
+
+	var compress = func(fileFullPath string) error {
+		f, err := os.Open(fileFullPath)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+
+		info, err := f.Stat()
+		if err != nil {
+			return err
+		}
+
+		header, err := tar.FileInfoHeader(info, "")
+		if err != nil {
+			return err
+		}
+
+		header.Format = tar.FormatGNU
+		header.Name = strings.TrimPrefix(filepath.Clean(fileFullPath), basePath)
+		log.Println(">>>>>", header.Name)
+		if err = tw.WriteHeader(header); err != nil {
+			return err
+		}
+
+		progressReader.SetReader(f)
+		if _, err = io.Copy(tw, progressReader); err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	// 压缩文件
+	for _, path := range fileList {
+		if err := compress(path); err != nil {
 			return err
 		}
 	}
@@ -206,6 +236,9 @@ func (c *processReader) Read(p []byte) (n int, err error) {
 func getSamplePart(arr []string) string {
 	if len(arr) <= 0 {
 		return ""
+	}
+	if len(arr) == 1 {
+		return arr[0]
 	}
 
 	var minLength = 20480
