@@ -1,8 +1,7 @@
 package uzip
 
 import (
-	"archive/tar"
-	"compress/gzip"
+	"archive/zip"
 	"fmt"
 	"io"
 	"log"
@@ -11,8 +10,7 @@ import (
 	"strings"
 )
 
-// GzipCompress 压缩 使用gzip压缩成tar.gz
-func GzipCompress(files []string, dest string, progress Progress) error {
+func ZipCompress(files []string, dest string, progress Progress) error {
 	if files == nil || len(files) == 0 {
 		return fmt.Errorf("nof file")
 	}
@@ -61,10 +59,6 @@ func GzipCompress(files []string, dest string, progress Progress) error {
 				return err
 			}
 
-			if info.IsDir() {
-				return nil
-			}
-
 			fileList = append(fileList, path)
 			return nil
 		})
@@ -74,11 +68,8 @@ func GzipCompress(files []string, dest string, progress Progress) error {
 		}
 	}
 
-	gw := gzip.NewWriter(d)
-	defer gw.Close()
-
-	tw := tar.NewWriter(gw)
-	defer tw.Close()
+	archive := zip.NewWriter(d)
+	defer archive.Close()
 
 	var compress = func(fileFullPath string) error {
 		f, err := os.Open(fileFullPath)
@@ -92,22 +83,30 @@ func GzipCompress(files []string, dest string, progress Progress) error {
 			return err
 		}
 
-		header, err := tar.FileInfoHeader(info, "")
+		header, err := zip.FileInfoHeader(info)
 		if err != nil {
 			return err
 		}
 
-		header.Format = tar.FormatGNU
-		header.Name = strings.TrimPrefix(filepath.Clean(fileFullPath), basePath)
+		header.Name = strings.TrimPrefix(fileFullPath, basePath)
 		log.Println(">>>>> compress >>>>>", header.Name)
 
-		if err = tw.WriteHeader(header); err != nil {
+		if info.IsDir() {
+			header.Name += "/"
+		} else {
+			header.Method = zip.Deflate
+		}
+
+		writer, err := archive.CreateHeader(header)
+		if err != nil {
 			return err
 		}
 
-		progressReader.SetReader(f)
-		if _, err = io.Copy(tw, progressReader); err != nil {
-			return err
+		if !info.IsDir() {
+			progressReader.SetReader(f)
+			if _, err = io.Copy(writer, progressReader); err != nil {
+				return err
+			}
 		}
 
 		return nil
@@ -123,8 +122,7 @@ func GzipCompress(files []string, dest string, progress Progress) error {
 	return nil
 }
 
-// GzipDeCompress 解压 tar.gz
-func GzipDeCompress(tarFile, dest string, progress Progress) error {
+func ZipDeCompress(tarFile, dest string, progress Progress) error {
 	srcFile, err := os.Open(tarFile)
 	if err != nil {
 		return err
@@ -132,33 +130,37 @@ func GzipDeCompress(tarFile, dest string, progress Progress) error {
 	defer srcFile.Close()
 
 	progressReader := NewProcessReader(progress)
-	if info, err := srcFile.Stat(); err != nil {
-		return err
-	} else {
-		progressReader.totalSize = info.Size()
-		progressReader.SetReader(srcFile)
-	}
-
-	gr, err := gzip.NewReader(progressReader)
+	info, err := srcFile.Stat()
 	if err != nil {
 		return err
 	}
-	defer gr.Close()
+	progressReader.totalSize = info.Size()
+	progressReader.SetReaderAt(srcFile)
 
-	tr := tar.NewReader(gr)
+	zipReader, err := zip.NewReader(progressReader, info.Size())
+	if err != nil {
+		return err
+	}
 
-	var decompress = func(hdr *tar.Header) error {
-		filename := fmt.Sprintf("%v/%v", dest, hdr.Name)
-		isDir := hdr.Typeflag == tar.TypeDir
+	var decompress = func(f *zip.File) error {
+		filename := filepath.Join(dest, f.Name)
+		isDir := f.FileInfo().IsDir()
 
 		file, err := createFile(filename, isDir)
 		if err != nil {
 			return err
 		}
+
 		if !isDir {
 			defer file.Close()
 
-			_, err = io.Copy(file, tr)
+			inFile, err := f.Open()
+			if err != nil {
+				return err
+			}
+			defer inFile.Close()
+
+			_, err = io.Copy(file, inFile)
 			if err != nil {
 				return err
 			}
@@ -167,19 +169,11 @@ func GzipDeCompress(tarFile, dest string, progress Progress) error {
 		return nil
 	}
 
-	for {
-		hdr, err := tr.Next()
-		if err != nil {
-			if err == io.EOF {
-				break
-			} else {
-				return err
-			}
-		}
-
-		if err := decompress(hdr); err != nil {
+	for _, f := range zipReader.File {
+		if err := decompress(f); err != nil {
 			return err
 		}
 	}
+
 	return nil
 }
