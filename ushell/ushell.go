@@ -167,3 +167,66 @@ func OpenUri(ctx context.Context, uri string) error {
 
 	return cmd.Run()
 }
+
+func ShellCommandStreamArgs(ctx context.Context, appPath string, args []string, cb func(msg []byte, isError bool)) error {
+	if cb == nil {
+		return fmt.Errorf("cb is nil")
+	}
+
+	var cmd *exec.Cmd
+
+	if runtime.GOOS == "windows" {
+		cmd = exec.CommandContext(ctx, appPath, args...)
+	} else {
+		cmd = exec.CommandContext(ctx, appPath, args...)
+	}
+
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		return err
+	}
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return err
+	}
+
+	wg := sync.WaitGroup{}
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		buffer := make([]byte, 65535)
+		reader := bufio.NewReader(stdout)
+		for true {
+			n, err := reader.Read(buffer)
+			if err != nil {
+				return
+			}
+			cb(buffer[:n], false)
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		buffer := make([]byte, 65535)
+		reader := bufio.NewReader(stderr)
+		for true {
+			n, err := reader.Read(buffer)
+			if err != nil {
+				return
+			}
+			cb(buffer[:n], true)
+		}
+	}()
+
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+
+	wg.Wait()
+
+	return err
+}
