@@ -146,6 +146,46 @@ func ShellCommandStreamV2(ctx context.Context, command string, cb func(stdoutPip
 	return err
 }
 
+func ShellCommandStreamV2Args(ctx context.Context, appPath string, args []string, cb func(stdoutPipe io.ReadCloser, stderrPipe io.ReadCloser), option func(c *exec.Cmd)) error {
+	if cb == nil {
+		return fmt.Errorf("cb is nil")
+	}
+
+	var cmd *exec.Cmd
+
+	if runtime.GOOS == "windows" {
+		cmd = exec.CommandContext(ctx, appPath, args...)
+	} else {
+		cmd = exec.CommandContext(ctx, appPath, args...)
+	}
+
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		return err
+	}
+	defer stderr.Close()
+
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return err
+	}
+	defer stdout.Close()
+
+	if option != nil {
+		option(cmd)
+	}
+
+	go func() {
+		cb(stdout, stderr)
+	}()
+
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+
+	return err
+}
+
 // OpenUri open uri on browser
 func OpenUri(ctx context.Context, uri string) error {
 	var commands = map[string]string{
