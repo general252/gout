@@ -20,7 +20,7 @@ func Compress(files []string, dest string, progress Progress) error {
 func DeCompress(file, dest string, progress Progress) error {
 	if strings.HasSuffix(file, ".tar.gz") {
 		return GzipDeCompress(file, dest, progress)
-	} else if strings.HasSuffix(dest, ".zip") {
+	} else if strings.HasSuffix(file, ".zip") {
 		return ZipDeCompress(file, dest, progress)
 	} else {
 		return fmt.Errorf("not support")
