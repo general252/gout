@@ -9,6 +9,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/axgle/mahonia"
 )
 
 // GzipCompress 压缩 使用gzip压缩成tar.gz
@@ -147,8 +149,14 @@ func GzipDeCompress(tarFile, dest string, progress Progress) error {
 
 	tr := tar.NewReader(gr)
 
+	objDecoder := mahonia.NewDecoder("GBK")
+
 	var decompress = func(hdr *tar.Header) error {
-		filename := fmt.Sprintf("%v/%v", dest, hdr.Name)
+		utf8String := hdr.Name
+		if objDecoder != nil {
+			utf8String = objDecoder.ConvertString(hdr.Name)
+		}
+		filename := fmt.Sprintf("%v/%v", dest, utf8String)
 		isDir := hdr.Typeflag == tar.TypeDir
 
 		file, err := createFile(filename, isDir)
