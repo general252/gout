@@ -2,12 +2,14 @@ package uimage
 
 import (
 	"bytes"
-	_ "golang.org/x/image/bmp"
 	"image"
 	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
+	"net/http"
 	"os"
+
+	_ "golang.org/x/image/bmp"
 )
 
 // Decode 解析图像(支持bmp/gig/jpeg/png)
@@ -28,7 +30,7 @@ func DecodeBytes(imageData []byte) (image.Image, string, error) {
 	return image.Decode(buffer)
 }
 
-// DecodeConfig
+// DecodeConfig x
 func DecodeConfig(imgFilePath string) (image.Config, string, error) {
 	fp, err := os.Open(imgFilePath)
 	if err != nil {
@@ -39,11 +41,16 @@ func DecodeConfig(imgFilePath string) (image.Config, string, error) {
 	return image.DecodeConfig(fp)
 }
 
-// DecodeConfigBytes
+// DecodeConfigBytes x
 func DecodeConfigBytes(imageData []byte) (image.Config, string, error) {
 	buffer := bytes.NewBuffer(imageData)
 
 	return image.DecodeConfig(buffer)
+}
+
+// DetectImageType http content type.  default "application/octet-stream", ["image/jpeg", "image/gif", "image/png", "image/webp"]
+func DetectImageType(imageData []byte) {
+	http.DetectContentType(imageData)
 }
 
 /*

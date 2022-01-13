@@ -3,15 +3,16 @@ package uhost
 import (
 	"bufio"
 	"fmt"
+	"io/ioutil"
+	"runtime"
+	"strings"
+	"time"
+
 	"github.com/general252/cpu_percent/cpu_percent"
 	"github.com/general252/gout/ushell"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/disk"
 	"github.com/shirou/gopsutil/mem"
-	"io/ioutil"
-	"runtime"
-	"strings"
-	"time"
 )
 
 type MemoryStat struct {

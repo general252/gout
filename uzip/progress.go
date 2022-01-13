@@ -26,7 +26,7 @@ type processReader struct {
 	readSize  int64
 	progress  Progress
 
-	reader io.Reader
+	reader   io.Reader
 	readerAt io.ReaderAt
 }
 
@@ -51,7 +51,7 @@ func (c *processReader) Read(p []byte) (n int, err error) {
 
 	return
 }
-func (c *processReader) ReadAt(p []byte, off int64) (n int, err error){
+func (c *processReader) ReadAt(p []byte, off int64) (n int, err error) {
 	if c.readerAt == nil {
 		return -1, fmt.Errorf("from error")
 	}

@@ -3,9 +3,10 @@ package upacket
 import (
 	"bytes"
 	"encoding/binary"
-	"github.com/general252/gout/uerror"
 	"hash/crc32"
 	"math"
+
+	"github.com/general252/gout/uerror"
 )
 
 const (

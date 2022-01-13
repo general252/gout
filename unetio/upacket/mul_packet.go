@@ -2,9 +2,10 @@ package upacket
 
 import (
 	"bytes"
+	"time"
+
 	"github.com/general252/gout/uerror"
 	"github.com/general252/gout/ulog"
-	"time"
 )
 
 const (

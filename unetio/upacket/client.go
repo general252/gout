@@ -1,12 +1,13 @@
 package upacket
 
 import (
-	"github.com/general252/gout/uerror"
 	"log"
 	"math/rand"
 	"net"
 	"sync"
 	"time"
+
+	"github.com/general252/gout/uerror"
 )
 
 func init() {

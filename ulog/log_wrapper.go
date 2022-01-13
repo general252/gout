@@ -1,8 +1,9 @@
 package ulog
 
 import (
-	"github.com/astaxie/beego/logs"
 	"time"
+
+	"github.com/astaxie/beego/logs"
 )
 
 // newLogWrapper return a LoggerInterface

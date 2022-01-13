@@ -2,11 +2,12 @@ package loss_detection
 
 import (
 	"context"
-	"github.com/general252/gout/uarray"
 	"log"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/general252/gout/uarray"
 )
 
 func TestNewSeqLossCheck(t *testing.T) {

@@ -24,7 +24,6 @@ func (c *uHttpRequest) getQueryCache() bool {
 	return c.queryCache != nil
 }
 
-
 func (c *uHttpRequest) GetString(key string) (string, bool) {
 	if !c.getQueryCache() {
 		return "", false

@@ -2,11 +2,12 @@ package ulog
 
 import (
 	"fmt"
-	"github.com/general252/gout/utask"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/general252/gout/utask"
 )
 
 func ExampleSetFileLogConfig() {

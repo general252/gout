@@ -3,10 +3,6 @@ package ulog
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/astaxie/beego/logs"
-	"github.com/general252/gout/uapp"
-	"github.com/general252/gout/ufile"
-	"github.com/general252/gout/ustack"
 	"log"
 	"os"
 	"path/filepath"
@@ -14,6 +10,11 @@ import (
 	"sort"
 	"sync"
 	"time"
+
+	"github.com/astaxie/beego/logs"
+	"github.com/general252/gout/uapp"
+	"github.com/general252/gout/ufile"
+	"github.com/general252/gout/ustack"
 )
 
 type LogLevel int

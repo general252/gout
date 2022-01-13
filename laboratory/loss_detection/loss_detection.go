@@ -3,11 +3,12 @@ package loss_detection
 import (
 	"container/list"
 	"context"
-	"github.com/willf/bitset"
 	"log"
 	"math"
 	"sync"
 	"time"
+
+	"github.com/willf/bitset"
 )
 
 const (

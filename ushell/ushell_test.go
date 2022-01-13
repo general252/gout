@@ -3,11 +3,12 @@ package ushell
 import (
 	"bytes"
 	"context"
-	"github.com/axgle/mahonia"
 	"io"
 	"log"
 	"os/exec"
 	"strings"
+
+	"github.com/axgle/mahonia"
 )
 
 type myBuffer struct {

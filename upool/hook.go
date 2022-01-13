@@ -2,6 +2,7 @@ package upool
 
 import (
 	"fmt"
+
 	"github.com/general252/gout/uencode"
 )
 

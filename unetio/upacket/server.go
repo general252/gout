@@ -1,11 +1,12 @@
 package upacket
 
 import (
+	"log"
+	"net"
+
 	"github.com/general252/gout/uerror"
 	"github.com/general252/gout/ulog"
 	"github.com/general252/gout/usafe"
-	"log"
-	"net"
 )
 
 type HandRecvPacket func(pkt *MulUdpPacket, payload []byte)

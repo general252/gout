@@ -2,9 +2,10 @@ package upool
 
 import (
 	"fmt"
-	"github.com/general252/gout/unet"
 	"log"
 	"time"
+
+	"github.com/general252/gout/unet"
 )
 
 func init() {

@@ -5,11 +5,12 @@ import (
 	"container/list"
 	"context"
 	"fmt"
+	"sync"
+	"time"
+
 	"github.com/general252/gout/uerror"
 	"github.com/general252/gout/ulog"
 	"github.com/general252/gout/usafe"
-	"sync"
-	"time"
 )
 
 const (

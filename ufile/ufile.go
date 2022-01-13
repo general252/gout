@@ -15,10 +15,10 @@ import (
 // MD5
 func Md5File(path string) (string, error) {
 	file, err := os.Open(path)
-	defer file.Close()
 	if err != nil {
 		return "", err
 	}
+	defer file.Close()
 
 	w := md5.New()
 	_, err = io.Copy(w, file)
@@ -32,10 +32,10 @@ func Md5File(path string) (string, error) {
 // SHA1
 func SHA1File(path string) (string, error) {
 	file, err := os.Open(path)
-	defer file.Close()
 	if err != nil {
 		return "", err
 	}
+	defer file.Close()
 
 	h := sha1.New()
 	_, err = io.Copy(h, file)
@@ -48,10 +48,10 @@ func SHA1File(path string) (string, error) {
 // SHA256
 func SHA256File(path string) (string, error) {
 	file, err := os.Open(path)
-	defer file.Close()
 	if err != nil {
 		return "", err
 	}
+	defer file.Close()
 
 	h := sha256.New()
 	_, err = io.Copy(h, file)
@@ -65,11 +65,9 @@ func SHA256File(path string) (string, error) {
 func IsExists(path string) bool {
 	_, err := os.Lstat(path) //os.Stat获取文件信息
 	if err != nil {
-		if os.IsExist(err) {
-			return true
-		}
-		return false
+		return os.IsExist(err)
 	}
+
 	return true
 }
 

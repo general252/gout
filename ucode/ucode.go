@@ -9,7 +9,7 @@ const (
 	InvalidArgument   Code = 3
 	IO                Code = 4
 	DB                Code = 5
-	DataFormat        Code = 6 // 文件格式错误 
+	DataFormat        Code = 6 // 文件格式错误
 	NotFound          Code = 7
 	AlreadyExists     Code = 8  // 已经存在
 	Canceled          Code = 9  // 取消

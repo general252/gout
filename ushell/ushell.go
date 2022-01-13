@@ -5,12 +5,13 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/axgle/mahonia"
 	"io"
 	"os/exec"
 	"runtime"
 	"strings"
 	"sync"
+
+	"github.com/axgle/mahonia"
 )
 
 // ShellCommand shell

@@ -9,8 +9,9 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
-	uuid "github.com/satori/go.uuid"
 	"regexp"
+
+	uuid "github.com/satori/go.uuid"
 )
 
 func UUID() string {
