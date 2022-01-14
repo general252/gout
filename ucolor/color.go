@@ -2,6 +2,7 @@ package ucolor
 
 import (
 	"fmt"
+	"github.com/general252/gout/ustring"
 )
 
 // FontColor defines a single SGR Code
@@ -72,56 +73,56 @@ const (
 	BgHiWhite
 )
 
-func ColorString(s string, c FontColor) string {
-	return fmt.Sprintf("%s[%dm%s%s[%dm", Escape, c, s, Escape, Reset)
+func ColorString(c FontColor, v ...interface{}) string {
+	return fmt.Sprintf("%s[%dm%s%s[%dm", Escape, c, ustring.Format(v...), Escape, Reset)
 }
 
-func Black(s string) string {
-	return ColorString(s, FgBlack)
+func Black(v ...interface{}) string {
+	return ColorString(FgBlack, v...)
 }
-func Red(s string) string {
-	return ColorString(s, FgRed)
+func Red(v ...interface{}) string {
+	return ColorString(FgRed, v...)
 }
-func Green(s string) string {
-	return ColorString(s, FgGreen)
+func Green(v ...interface{}) string {
+	return ColorString(FgGreen, v...)
 }
-func Yellow(s string) string {
-	return ColorString(s, FgYellow)
+func Yellow(v ...interface{}) string {
+	return ColorString(FgYellow, v...)
 }
-func Blue(s string) string {
-	return ColorString(s, FgBlue)
+func Blue(v ...interface{}) string {
+	return ColorString(FgBlue, v...)
 }
-func Magenta(s string) string {
-	return ColorString(s, FgMagenta)
+func Magenta(v ...interface{}) string {
+	return ColorString(FgMagenta, v...)
 }
-func Cyan(s string) string {
-	return ColorString(s, FgCyan)
+func Cyan(v ...interface{}) string {
+	return ColorString(FgCyan, v...)
 }
-func White(s string) string {
-	return ColorString(s, FgWhite)
+func White(v ...interface{}) string {
+	return ColorString(FgWhite, v...)
 }
 
-func HiBlack(s string) string {
-	return ColorString(s, FgHiBlack)
+func HiBlack(v ...interface{}) string {
+	return ColorString(FgHiBlack, v...)
 }
-func HiRed(s string) string {
-	return ColorString(s, FgHiRed)
+func HiRed(v ...interface{}) string {
+	return ColorString(FgHiRed, v...)
 }
-func HiGreen(s string) string {
-	return ColorString(s, FgHiGreen)
+func HiGreen(v ...interface{}) string {
+	return ColorString(FgHiGreen, v...)
 }
-func HiYellow(s string) string {
-	return ColorString(s, FgHiYellow)
+func HiYellow(v ...interface{}) string {
+	return ColorString(FgHiYellow, v...)
 }
-func HiBlue(s string) string {
-	return ColorString(s, FgHiBlue)
+func HiBlue(v ...interface{}) string {
+	return ColorString(FgHiBlue, v...)
 }
-func HiMagenta(s string) string {
-	return ColorString(s, FgHiMagenta)
+func HiMagenta(v ...interface{}) string {
+	return ColorString(FgHiMagenta, v...)
 }
-func HiCyan(s string) string {
-	return ColorString(s, FgHiCyan)
+func HiCyan(v ...interface{}) string {
+	return ColorString(FgHiCyan, v...)
 }
-func HiWhite(s string) string {
-	return ColorString(s, FgHiWhite)
+func HiWhite(v ...interface{}) string {
+	return ColorString(FgHiWhite, v...)
 }
