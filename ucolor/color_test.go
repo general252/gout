@@ -33,3 +33,9 @@ func TestRed(t *testing.T) {
 
 	_, _ = fmt.Fprintf(output, "hello %v", Red("Red"))
 }
+
+func TestColorStringX(t *testing.T) {
+	s := ColorStringX([]FontColor{Bold, FgHiCyan, BgWhite, Underline}, "abc")
+
+	fmt.Printf("%s", s)
+}

@@ -2,6 +2,8 @@ package ucolor
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/general252/gout/ustring"
 )
 
@@ -75,6 +77,16 @@ const (
 
 func ColorString(c FontColor, v ...interface{}) string {
 	return fmt.Sprintf("%s[%dm%s%s[%dm", Escape, c, ustring.Format(v...), Escape, Reset)
+}
+
+func ColorStringX(colors []FontColor, v ...interface{}) string {
+	var colorArray []string
+	for _, c := range colors {
+		colorArray = append(colorArray, fmt.Sprintf("%d", c))
+	}
+	colorStr := strings.Join(colorArray, ";")
+
+	return fmt.Sprintf("%s[%sm%s%s[%dm", Escape, colorStr, ustring.Format(v...), Escape, Reset)
 }
 
 func Black(v ...interface{}) string {
