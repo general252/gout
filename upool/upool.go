@@ -66,12 +66,12 @@ func (tis *UPool) AddHook(hook PoolHook) {
 	tis.hooks.Store(hook.ID(), hook)
 }
 
-// AddHook remove hook by hook id
+// RemoveHook remove hook by hook id
 func (tis *UPool) RemoveHook(hook PoolHook) {
 	tis.hooks.Delete(hook.ID())
 }
 
-// Write write item, if pool is full will error
+// Write if pool is full will error
 func (tis *UPool) Write(data *PoolItem) error {
 	obj := tis.pool.Get().(*PoolItem)
 	{
