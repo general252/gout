@@ -5,10 +5,16 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 )
 
 func ExampleEccGenerateKey() {
-	pri, pub, cert, _ := EccGenerateKey(elliptic.P256(), nil)
+	pri, pub, cert, _ := EccGenerateKey(elliptic.P256(), &CertInfo{
+		CommonName: "127.0.0.1",
+		NotBefore:  time.Date(2001, 1, 1, 0, 0, 0, 0, time.UTC),
+		NotAfter:   time.Date(2099, 12, 31, 0, 0, 0, 0, time.UTC),
+		IsCA:       false,
+	})
 	fmt.Println(pri)
 	fmt.Println(pub)
 	fmt.Println(cert)

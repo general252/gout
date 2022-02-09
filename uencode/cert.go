@@ -59,6 +59,7 @@ func getCert(priKey interface{}, certInfo *CertInfo) (certPubKey string, err err
 
 		NotBefore: certInfo.NotBefore,
 		NotAfter:  certInfo.NotAfter,
+		IsCA:      certInfo.IsCA,
 
 		KeyUsage:              keyUsage,
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},

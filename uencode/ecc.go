@@ -44,7 +44,7 @@ func EccGenerateKey(c elliptic.Curve, certInfo *CertInfo) (priKey, pubKey string
 
 		// 保存
 		if err := pem.Encode(&outPriKey, &pem.Block{
-			Type:  "ECC Private Key",
+			Type:  "ECC PRIVATE KEY",
 			Bytes: bytesX509PrivateKey,
 		}); err != nil {
 			return "", "", "", err
@@ -64,7 +64,7 @@ func EccGenerateKey(c elliptic.Curve, certInfo *CertInfo) (priKey, pubKey string
 
 		//pem格式编码
 		if err := pem.Encode(&outPubKey, &pem.Block{
-			Type:  "ECC Public Key",
+			Type:  "ECC PUBLIC KEY",
 			Bytes: bytesX509PublicKey,
 		}); err != nil {
 			return "", "", "", err

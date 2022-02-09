@@ -49,8 +49,8 @@ func DecodeConfigBytes(imageData []byte) (image.Config, string, error) {
 }
 
 // DetectImageType http content type.  default "application/octet-stream", ["image/jpeg", "image/gif", "image/png", "image/webp"]
-func DetectImageType(imageData []byte) {
-	http.DetectContentType(imageData)
+func DetectImageType(imageData []byte) string {
+	return http.DetectContentType(imageData)
 }
 
 /*
