@@ -56,3 +56,31 @@ func (c *uHttpRequest) GetInt(key string) (int, bool) {
 
 	return int(v), ok
 }
+
+func (c *uHttpRequest) GetBool(key string) (bool, bool) {
+	val, ok := c.GetString(key)
+	if !ok {
+		return false, false
+	}
+
+	v, err := strconv.ParseBool(val)
+	if err != nil {
+		return false, false
+	}
+
+	return v, true
+}
+
+func (c *uHttpRequest) GetFloat(key string) (float64, bool) {
+	val, ok := c.GetString(key)
+	if !ok {
+		return 0, false
+	}
+
+	v, err := strconv.ParseFloat(val, 64)
+	if err != nil {
+		return 0, false
+	}
+
+	return v, true
+}
