@@ -6,13 +6,14 @@ import (
 	"crypto/tls"
 	"io"
 	"io/ioutil"
+	"mime/multipart"
 	"net"
 	"net/http"
 	"strings"
 	"time"
 )
 
-// HttpDo
+// HttpDo http do
 func HttpDo(method, url, data string, headers map[string]string) ([]byte, error) {
 	client := &http.Client{
 		Transport: &http.Transport{
@@ -148,4 +149,41 @@ func HttpRequestJsonWithClient(method string, url string, body []byte, headers m
 	defer resp.Body.Close()
 
 	return ioutil.ReadAll(resp.Body)
+}
+
+// NewMultipartFormData multipart/form-data
+func NewMultipartFormData(uri string, params map[string]string, fieldName, filename string, fileData *bytes.Buffer) (*http.Request, error) {
+	var (
+		err  error
+		body = &bytes.Buffer{}
+
+		writer *multipart.Writer
+		part   io.Writer
+
+		request *http.Request
+	)
+
+	// multipart
+	writer = multipart.NewWriter(body)
+	for k, v := range params {
+		_ = writer.WriteField(k, v)
+	}
+
+	if part, err = writer.CreateFormFile(fieldName, filename); err != nil {
+		return nil, err
+	}
+
+	if _, err = io.Copy(part, fileData); err != nil {
+		return nil, err
+	}
+
+	_ = writer.Close()
+
+	if request, err = http.NewRequest(http.MethodPost, uri, body); err != nil {
+		return nil, err
+	} else {
+		request.Header.Set("Content-Type", writer.FormDataContentType())
+	}
+
+	return request, nil
 }
