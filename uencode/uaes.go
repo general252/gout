@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/sha1"
+	"crypto/sha256"
 )
 
 // 填充数据
@@ -20,7 +22,7 @@ func unPadding(src []byte) []byte {
 	return src[:n-unPadNum]
 }
 
-// 加密
+// AESEncrypt 加密
 func AESEncrypt(src []byte, key, iv []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
@@ -34,7 +36,7 @@ func AESEncrypt(src []byte, key, iv []byte) ([]byte, error) {
 	return src, nil
 }
 
-// 解密
+// AESDecrypt 解密
 func AESDecrypt(src []byte, key, iv []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
@@ -45,4 +47,30 @@ func AESDecrypt(src []byte, key, iv []byte) ([]byte, error) {
 	src = unPadding(src)
 
 	return src, nil
+}
+
+func getKeyIv(password string) (key, iv []byte) {
+	h256 := sha256.New()
+	h256.Write([]byte("salt_537B" + password))
+	key = h256.Sum(nil)
+
+	h := sha1.New()
+	h.Write([]byte("salt_4CD1" + password))
+	iv = h.Sum(nil)
+
+	iv = iv[:16]
+
+	return
+}
+
+// AESEncryptV2 加密
+func AESEncryptV2(data []byte, password string) ([]byte, error) {
+	key, iv := getKeyIv(password)
+	return AESEncrypt(data, key, iv)
+}
+
+// AESDecryptV2 解码
+func AESDecryptV2(data []byte, password string) ([]byte, error) {
+	key, iv := getKeyIv(password)
+	return AESDecrypt(data, key, iv)
 }

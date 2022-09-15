@@ -1,7 +1,10 @@
 package uencode
 
 import (
+	"bytes"
 	"encoding/base64"
+	"encoding/hex"
+	"log"
 	"testing"
 )
 
@@ -24,4 +27,32 @@ func TestAESEncrypt(t *testing.T) {
 		t.Error(err)
 	}
 	t.Logf("解密后: %v %v", len(x2), string(x2))
+}
+
+func Test_getKeyIv(t *testing.T) {
+	key, iv := getKeyIv("abc")
+	log.Println(hex.EncodeToString(key))
+	log.Println(hex.EncodeToString(iv))
+}
+
+func TestAESDecryptV2(t *testing.T) {
+	var (
+		src = "hello world"
+		pwd = "123456"
+	)
+
+	data, err := AESEncryptV2([]byte(src), pwd)
+	if err != nil {
+		t.Error(err)
+	}
+
+	buf := bytes.Buffer{}
+	buf.Write(data)
+
+	dst, err := AESDecryptV2(buf.Bytes(), pwd)
+	if err != nil {
+		t.Error(err)
+	}
+
+	t.Logf("dst: %v", string(dst))
 }
