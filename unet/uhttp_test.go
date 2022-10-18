@@ -134,10 +134,10 @@ func ExampleHttpRequestJsonWithClient() {
 }
 
 func ExampleHttpRequestCustom() {
-	param := NewHttpRequestParam()
+	param := NewHttpRequestParam("https://www.baidu.com/s?ie=utf-8&wd=hello")
 	body, err := HttpRequestCustom(param, func(req *http.Request, param *HttpRequestParam) {
 
-		param.cli = &http.Client{
+		param.Cli = &http.Client{
 			Transport: &http.Transport{
 				TLSClientConfig: &tls.Config{
 					InsecureSkipVerify: true,

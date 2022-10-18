@@ -157,18 +157,18 @@ type HttpRequestParam struct {
 	Method  string // GET/POST
 	Body    []byte
 	Headers map[string]string
-	cli     *http.Client
+	Cli     *http.Client
 }
 
-func NewHttpRequestParam() *HttpRequestParam {
+func NewHttpRequestParam(url string) *HttpRequestParam {
 	return &HttpRequestParam{
-		URL:    "https://www.baidu.com/s?ie=utf-8&wd=hello",
-		Method: http.MethodPost,
+		URL:    url,
+		Method: http.MethodGet,
 		Body:   nil,
 		Headers: map[string]string{
 			"Content-Type": "application/json; charset=utf-8",
 		},
-		cli: http.DefaultClient,
+		Cli: http.DefaultClient,
 	}
 }
 
@@ -195,7 +195,7 @@ func HttpRequestCustom(param *HttpRequestParam, fn func(req *http.Request, param
 		fn(req, param)
 	}
 
-	cli := param.cli
+	cli := param.Cli
 	if cli == nil {
 		cli = http.DefaultClient
 	}
