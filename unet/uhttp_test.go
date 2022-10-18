@@ -132,3 +132,28 @@ func ExampleHttpRequestJsonWithClient() {
 	// output:
 
 }
+
+func ExampleHttpRequestCustom() {
+	param := NewHttpRequestParam()
+	body, err := HttpRequestCustom(param, func(req *http.Request, param *HttpRequestParam) {
+
+		param.cli = &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{
+					InsecureSkipVerify: true,
+				},
+				DialContext: func(ctx context.Context, network, addr string) (conn net.Conn, e error) {
+					conn, err := net.DialTimeout(network, addr, time.Second*5) //设置建立连接超时
+					if err != nil {
+						return nil, err
+					}
+					return conn, nil
+				},
+			},
+		}
+	})
+
+	_, _ = body, err
+
+	// output:
+}

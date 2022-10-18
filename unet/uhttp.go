@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"mime/multipart"
@@ -140,6 +141,63 @@ func HttpRequestJsonWithClient(method string, url string, body []byte, headers m
 
 	for key, value := range headers {
 		req.Header.Set(key, value)
+	}
+
+	resp, err := cli.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	return ioutil.ReadAll(resp.Body)
+}
+
+type HttpRequestParam struct {
+	URL     string
+	Method  string // GET/POST
+	Body    []byte
+	Headers map[string]string
+	cli     *http.Client
+}
+
+func NewHttpRequestParam() *HttpRequestParam {
+	return &HttpRequestParam{
+		URL:    "https://www.baidu.com/s?ie=utf-8&wd=hello",
+		Method: http.MethodPost,
+		Body:   nil,
+		Headers: map[string]string{
+			"Content-Type": "application/json; charset=utf-8",
+		},
+		cli: http.DefaultClient,
+	}
+}
+
+// HttpRequestCustom http请求, context-type: "application/json; charset=utf-8"
+func HttpRequestCustom(param *HttpRequestParam, fn func(req *http.Request, param *HttpRequestParam)) ([]byte, error) {
+	if param == nil {
+		return nil, fmt.Errorf("invate param")
+	}
+
+	var p io.Reader
+	if param.Body != nil {
+		p = bytes.NewBuffer(param.Body)
+	}
+	req, err := http.NewRequest(param.Method, param.URL, p)
+	if err != nil {
+		return nil, err
+	}
+
+	for key, value := range param.Headers {
+		req.Header.Set(key, value)
+	}
+
+	if fn != nil {
+		fn(req, param)
+	}
+
+	cli := param.cli
+	if cli == nil {
+		cli = http.DefaultClient
 	}
 
 	resp, err := cli.Do(req)
