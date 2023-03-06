@@ -132,6 +132,10 @@ func getBasePath(files []string) (string, error) {
 		}
 	}
 
+	if len(commonPrefix) > 0 {
+		commonPrefix += string(filepath.Separator)
+	}
+
 	return commonPrefix, nil
 }
 
