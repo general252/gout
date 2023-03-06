@@ -37,22 +37,9 @@ func GzipCompress(files []string, dest string, progress Progress) error {
 	}
 
 	// 计算顶层目录
-	basePath := getSamplePart(newFiles)
-	{
-		if len(newFiles) == 1 {
-			ifo, err := os.Lstat(basePath)
-			if err != nil {
-				return err
-			}
-
-			if !ifo.IsDir() {
-				basePath = filepath.Dir(basePath)
-			}
-		}
-		basePath = filepath.Clean(basePath)
-		if strings.HasSuffix(basePath, string(os.PathSeparator)) == false {
-			basePath = basePath + string(os.PathSeparator)
-		}
+	basePath, err := getBasePath(newFiles)
+	if err != nil {
+		return err
 	}
 
 	// 收集压缩的文件

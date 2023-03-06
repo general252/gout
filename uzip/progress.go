@@ -104,6 +104,23 @@ func getSamplePart(arr []string) string {
 	return arr[0][:n]
 }
 
+func getBasePath(files []string) (string, error) {
+	basePath := getSamplePart(files)
+
+	if ifo, err := os.Lstat(basePath); err != nil {
+		return "", err
+	} else if !ifo.IsDir() {
+		basePath = filepath.Dir(basePath)
+	}
+
+	basePath = filepath.Clean(basePath)
+	if !strings.HasSuffix(basePath, string(os.PathSeparator)) {
+		basePath = basePath + string(os.PathSeparator)
+	}
+
+	return basePath, nil
+}
+
 // getTotalSize 获取文件大小
 func getTotalSize(files []string) (int64, error) {
 	var size int64
