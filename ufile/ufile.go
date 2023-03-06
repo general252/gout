@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-// MD5
+// Md5File 文件hash
 func Md5File(path string) (string, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -29,7 +29,7 @@ func Md5File(path string) (string, error) {
 	return fmt.Sprintf("%x", w.Sum(nil)), nil
 }
 
-// SHA1
+// SHA1File 文件hash
 func SHA1File(path string) (string, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -45,7 +45,7 @@ func SHA1File(path string) (string, error) {
 	return fmt.Sprintf("%x", h.Sum(nil)), nil
 }
 
-// SHA256
+// SHA256File 文件hash
 func SHA256File(path string) (string, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -61,7 +61,7 @@ func SHA256File(path string) (string, error) {
 	return fmt.Sprintf("%x", h.Sum(nil)), nil
 }
 
-// 判断所给路径文件/文件夹是否存在
+// IsExists 判断所给路径文件/文件夹是否存在
 func IsExists(path string) bool {
 	_, err := os.Lstat(path) //os.Stat获取文件信息
 	if err != nil {
@@ -93,3 +93,21 @@ func Split(fullPath string) (dir, file, ext string) {
 }
 
 // https://github.com/mattetti/filebuffer
+
+// FileInfo 文件信息
+func FileInfo(path string) (os.FileInfo, error) {
+	fp, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+
+	info, err := fp.Stat()
+	if err != nil {
+		_ = fp.Close()
+		return nil, err
+	}
+	
+	_ = fp.Close()
+
+	return info, nil
+}
