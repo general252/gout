@@ -105,20 +105,34 @@ func getSamplePart(arr []string) string {
 }
 
 func getBasePath(files []string) (string, error) {
-	basePath := getSamplePart(files)
+	var commonPrefix string
 
-	if ifo, err := os.Lstat(basePath); err != nil {
-		return "", err
-	} else if !ifo.IsDir() {
-		basePath = filepath.Dir(basePath)
+	for i, file := range files {
+		dir, err := filepath.Abs(filepath.Dir(file))
+		if err != nil {
+			return "", err
+		}
+
+		// Split the directory path into its components.
+		parts := strings.Split(dir, string(filepath.Separator))
+
+		// If this is the first file, just use its directory as the common prefix.
+		if i == 0 {
+			commonPrefix = dir
+			continue
+		}
+
+		// Compare the directory path to the current common prefix.
+		// Update the common prefix to include only the common parts.
+		for j, part := range strings.Split(commonPrefix, string(filepath.Separator)) {
+			if j >= len(parts) || part != parts[j] {
+				commonPrefix = strings.Join(parts[:j], string(filepath.Separator))
+				break
+			}
+		}
 	}
 
-	basePath = filepath.Clean(basePath)
-	if !strings.HasSuffix(basePath, string(os.PathSeparator)) {
-		basePath = basePath + string(os.PathSeparator)
-	}
-
-	return basePath, nil
+	return commonPrefix, nil
 }
 
 // getTotalSize 获取文件大小
