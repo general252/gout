@@ -1,6 +1,6 @@
 module github.com/general252/gout
 
-go 1.14
+go 1.18
 
 require (
 	github.com/astaxie/beego v1.12.2
