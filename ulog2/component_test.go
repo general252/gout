@@ -33,13 +33,22 @@ func ExampleSetDefaultWriter() {
 	// output:
 }
 
+func aa(log Logger) {
+	log.Debug("hello world")
+}
+
+func bb(log Logger) {
+	aa(log)
+}
+
 func BenchmarkLog(b *testing.B) {
 	SetDefaultWriter(func(o *JsonLogObject) {
 
 	})
 	log := Component()
 
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		log.Debug("hello world")
+		bb(log)
 	}
 }

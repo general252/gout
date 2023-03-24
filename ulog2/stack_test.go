@@ -7,7 +7,7 @@ import (
 )
 
 func a() {
-	stacks := GetLastCallStackDepth(6)
+	stacks := getLastCallStackDepth(6)
 	for _, stack := range stacks {
 		log.Printf("%v:%v %v", stack.File, stack.Line, stack.Func)
 	}

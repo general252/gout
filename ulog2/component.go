@@ -165,19 +165,36 @@ func (tis *componentData) reset() {
 	tis.stackDepth = 4
 }
 
+var eventPool = &sync.Pool{
+	New: func() interface{} {
+		return &JsonLogObject{}
+	},
+}
+
 func (tis *componentData) print(level LogLevel, v ...interface{}) {
-	logData := &JsonLogObject{
-		Time:  time.Now(),
-		Level: level,
-		Tag:   tis.getTag(),
-		Data:  Format(v...),
+	var logData *JsonLogObject
+	if true {
+		logData = eventPool.Get().(*JsonLogObject)
+		defer eventPool.Put(logData)
+
+		logData.Time = time.Now()
+		logData.Level = level
+		logData.Tag = tis.getTag()
+		logData.Data = Format(v...)
+	} else {
+		logData = &JsonLogObject{
+			Time:  time.Now(),
+			Level: level,
+			Tag:   tis.getTag(),
+			Data:  Format(v...),
+		}
 	}
 
 	if tis.withStack {
-		logData.Stacks = GetLastCallStackDepth(tis.getStackDepth())
+		logData.Stacks = getLastCallStackDepth(tis.getStackDepth())
 		logData.Location = logData.Stacks[0]
 	} else {
-		logData.Location = GetLastCallStackDepth(1)[0]
+		logData.Location = getLastCallStackDepth(1)[0]
 	}
 
 	tis.reset()

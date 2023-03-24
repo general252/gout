@@ -34,8 +34,7 @@ type StackFrame struct {
 	Func string `json:"func"`
 }
 
-// GetLastCallStackDepth 获取当前代码调用堆栈
-func GetLastCallStackDepth(depth int) Stacks {
+func GetLastCallStackDepth(skipFrameCount, depth int) Stacks {
 	var (
 		shortFile = true
 		result    Stacks
@@ -47,7 +46,7 @@ func GetLastCallStackDepth(depth int) Stacks {
 
 	shortFile = true
 
-	for i := 1; i < 15; i++ {
+	for i := skipFrameCount; i < 15; i++ {
 		pc, file, line, ok := runtime.Caller(i)
 		if !ok {
 			break
@@ -98,6 +97,11 @@ func GetLastCallStackDepth(depth int) Stacks {
 	}
 
 	return result
+}
+
+// getLastCallStackDepth 获取当前代码调用堆栈
+func getLastCallStackDepth(depth int) Stacks {
+	return GetLastCallStackDepth(4, depth)
 }
 
 // split 分割路径
