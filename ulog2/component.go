@@ -30,8 +30,8 @@ func SetDefaultWriter(f LoggerWriter) {
 // Component component
 func Component(tags ...string) Logger {
 	c := &componentData{
-		tag: tags,
-		w:   defaultLogWriter,
+		tag:    tags,
+		writer: defaultLogWriter,
 	}
 
 	return c
@@ -40,7 +40,7 @@ func Component(tags ...string) Logger {
 type componentData struct {
 	tag    Tag
 	tagTmp Tag
-	w      LoggerWriter
+	writer LoggerWriter
 }
 
 func (tis *componentData) resetTempTag() Tag {
@@ -53,44 +53,44 @@ func (tis *componentData) resetTempTag() Tag {
 }
 
 func (tis *componentData) Debug(v ...interface{}) {
-	tis.w(&JsonLogObject{
+	tis.writer(&JsonLogObject{
 		Format:   logFormat,
 		Time:     time.Now(),
-		Location: GetLastCallStack(),
-		Level:    byte('D'),
+		Location: getLastCallStack(),
+		Level:    LevelDebug,
 		Tag:      tis.resetTempTag(),
 		Data:     Format(v...),
 	})
 }
 
 func (tis *componentData) Info(v ...interface{}) {
-	tis.w(&JsonLogObject{
+	tis.writer(&JsonLogObject{
 		Format:   logFormat,
 		Time:     time.Now(),
-		Location: GetLastCallStack(),
-		Level:    byte('I'),
+		Location: getLastCallStack(),
+		Level:    LevelInfo,
 		Tag:      tis.resetTempTag(),
 		Data:     Format(v...),
 	})
 }
 
 func (tis *componentData) Warn(v ...interface{}) {
-	tis.w(&JsonLogObject{
+	tis.writer(&JsonLogObject{
 		Format:   logFormat,
 		Time:     time.Now(),
-		Location: GetLastCallStack(),
-		Level:    byte('W'),
+		Location: getLastCallStack(),
+		Level:    LevelWarn,
 		Tag:      tis.resetTempTag(),
 		Data:     Format(v...),
 	})
 }
 
 func (tis *componentData) Error(v ...interface{}) {
-	tis.w(&JsonLogObject{
+	tis.writer(&JsonLogObject{
 		Format:   logFormat,
 		Time:     time.Now(),
-		Location: GetLastCallStack(),
-		Level:    byte('E'),
+		Location: getLastCallStack(),
+		Level:    LevelError,
 		Tag:      tis.resetTempTag(),
 		Data:     Format(v...),
 	})
@@ -119,12 +119,12 @@ func (tis *componentData) HasTag(tag string) bool {
 	return false
 }
 
-func (tis *componentData) WithWriter(w LoggerWriter) {
-	tis.w = w
+func (tis *componentData) WithWriter(writer LoggerWriter) {
+	tis.writer = writer
 }
 
 const (
-	logFormat = "%v %v:%v [%c] %v%v\n"
+	logFormat = "%s %s:%d [%s] %s%s\n"
 	dateTime  = "2006-01-02 15:04:05"
 )
 
@@ -133,7 +133,7 @@ type JsonLogObject struct {
 	Format   string     `json:"format"`   // 默认格式化 "%v %v:%v [%c] %v %v\n"
 	Time     time.Time  `json:"time"`     // 时间
 	Location StackFrame `json:"location"` // 日志调用位置
-	Level    byte       `json:"level"`    // 日志级别('D', 'I', 'W', 'E')
+	Level    LogLevel   `json:"level"`    // 日志级别
 	Tag      Tag        `json:"tag"`      // tag
 	Data     string     `json:"data"`     // 日志数据
 }

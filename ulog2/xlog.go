@@ -1,5 +1,48 @@
 package ulog2
 
+type LogLevel int
+
+// RFC5424 log message levels.
+const (
+	LevelEmergency LogLevel = iota
+	LevelAlert
+	LevelCritical
+	LevelError
+	LevelWarning
+	LevelNotice
+	LevelInformational
+	LevelDebug
+)
+
+const (
+	LevelInfo  = LevelInformational
+	LevelTrace = LevelDebug
+	LevelWarn  = LevelWarning
+)
+
+func (v LogLevel) String() string {
+	switch v {
+	case LevelEmergency:
+		return "Emergency"
+	case LevelAlert:
+		return "Alert"
+	case LevelCritical:
+		return "Critical"
+	case LevelError:
+		return "E"
+	case LevelWarning:
+		return "W"
+	case LevelNotice:
+		return "Notice"
+	case LevelInformational:
+		return "I"
+	case LevelDebug:
+		return "D"
+	default:
+		return "UnKnown"
+	}
+}
+
 func Debug(v ...interface{}) {
 	Component().Debug(v...)
 }

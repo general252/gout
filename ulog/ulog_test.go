@@ -30,7 +30,7 @@ func ExampleSetFileLogConfig() {
 		MaxSize:    1 << 28,
 	}
 
-	if err := SetFileLogConfig(config); err != nil {
+	if err := SetFileLogConfig(true, &config); err != nil {
 		fmt.Printf("set file log config fail %v", err)
 	}
 

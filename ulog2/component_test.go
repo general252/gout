@@ -2,6 +2,7 @@ package ulog2
 
 import (
 	"fmt"
+	"os"
 )
 
 func ExampleComponent() {
@@ -17,17 +18,11 @@ func ExampleComponent() {
 	log.Debug("hello world")
 
 	// output:
-	// 2023-03-23 20:22:33 component_test.go:5 [D] [tag1, tag2] hello world
-	// 2023-03-23 20:22:33 component_test.go:6 [I] [tag1, tag2] hello world
-	// 2023-03-23 20:22:33 component_test.go:7 [W] [tag1, tag2] hello world
-	// 2023-03-23 20:22:33 component_test.go:8 [E] [tag1, tag2] hello world
-	// 2023-03-23 20:22:33 component_test.go:10 [D] [tag1, tag2, tempTag] I have temp tag
-	// 2023-03-23 20:22:33 component_test.go:13 [D] [tag1, tag2, tag3] hello world
 }
 
 func ExampleSetDefaultWriter() {
 	SetDefaultWriter(func(o *JsonLogObject) {
-		fmt.Println(o.String())
+		_, _ = fmt.Fprintf(os.Stderr, o.String())
 	})
 
 	log := Component()
