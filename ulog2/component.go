@@ -3,6 +3,7 @@ package ulog2
 import (
 	"fmt"
 	"os"
+	"sync"
 	"time"
 )
 
@@ -20,6 +21,7 @@ type Logger interface {
 	HasTag(tag string) bool
 
 	WithWriter(w LoggerWriter)
+	WithStack(depth int) Logger
 }
 
 // SetDefaultWriter set default log io writer
@@ -30,8 +32,10 @@ func SetDefaultWriter(f LoggerWriter) {
 // Component component
 func Component(tags ...string) Logger {
 	c := &componentData{
-		tag:    tags,
-		writer: defaultLogWriter,
+		tag:        tags,
+		writer:     defaultLogWriter,
+		withStack:  false,
+		stackDepth: 4,
 	}
 
 	return c
@@ -41,76 +45,88 @@ type componentData struct {
 	tag    Tag
 	tagTmp Tag
 	writer LoggerWriter
+
+	withStack  bool
+	stackDepth int
+
+	mux sync.RWMutex
 }
 
-func (tis *componentData) resetTempTag() Tag {
-	tag := Tags(tis.tag...)
-	tag.Append(tis.tagTmp...)
+func (tis *componentData) WithStack(depth int) Logger {
+	return &componentData{
+		tag:        tis.tag,
+		tagTmp:     tis.tagTmp,
+		writer:     tis.writer,
+		withStack:  true,
+		stackDepth: depth,
+	}
+}
 
-	tis.tagTmp = nil
-
-	return tag
+func (tis *componentData) WithWriter(writer LoggerWriter) {
+	tis.writer = writer
 }
 
 func (tis *componentData) Debug(v ...interface{}) {
-	tis.writer(&JsonLogObject{
-		Format:   logFormat,
-		Time:     time.Now(),
-		Location: getLastCallStack(),
-		Level:    LevelDebug,
-		Tag:      tis.resetTempTag(),
-		Data:     Format(v...),
-	})
+	tis.print(LevelDebug, v...)
 }
 
 func (tis *componentData) Info(v ...interface{}) {
-	tis.writer(&JsonLogObject{
-		Format:   logFormat,
-		Time:     time.Now(),
-		Location: getLastCallStack(),
-		Level:    LevelInfo,
-		Tag:      tis.resetTempTag(),
-		Data:     Format(v...),
-	})
+	tis.print(LevelInfo, v...)
 }
 
 func (tis *componentData) Warn(v ...interface{}) {
-	tis.writer(&JsonLogObject{
-		Format:   logFormat,
-		Time:     time.Now(),
-		Location: getLastCallStack(),
-		Level:    LevelWarn,
-		Tag:      tis.resetTempTag(),
-		Data:     Format(v...),
-	})
+	tis.print(LevelWarn, v...)
 }
 
 func (tis *componentData) Error(v ...interface{}) {
-	tis.writer(&JsonLogObject{
-		Format:   logFormat,
-		Time:     time.Now(),
-		Location: getLastCallStack(),
-		Level:    LevelError,
-		Tag:      tis.resetTempTag(),
-		Data:     Format(v...),
-	})
+	tis.print(LevelError, v...)
 }
 
 func (tis *componentData) AddTag(tags ...string) Logger {
-	tis.tag.Append(tags...)
+	tis.mux.Lock()
+	defer tis.mux.Unlock()
+
+	for _, tag := range tags {
+		find := false
+		for _, s := range tis.tag {
+			if s == tag {
+				find = true
+				break
+			}
+		}
+
+		if !find {
+			tis.tag.Append(tag)
+		}
+	}
 	return tis
 }
 
 func (tis *componentData) WithTag(tags ...string) Logger {
-	tis.tagTmp.Append(tags...)
-	return tis
+	object := &componentData{
+		tag:        tis.tag,
+		tagTmp:     tis.tagTmp,
+		writer:     tis.writer,
+		withStack:  tis.withStack,
+		stackDepth: tis.stackDepth,
+	}
+
+	object.tagTmp.Append(tags...)
+
+	return object
 }
 
 func (tis *componentData) GetTag() Tag {
+	tis.mux.RLock()
+	defer tis.mux.RUnlock()
+
 	return tis.tag
 }
 
 func (tis *componentData) HasTag(tag string) bool {
+	tis.mux.RLock()
+	defer tis.mux.RUnlock()
+
 	for _, s := range tis.tag {
 		if s == tag {
 			return true
@@ -119,23 +135,68 @@ func (tis *componentData) HasTag(tag string) bool {
 	return false
 }
 
-func (tis *componentData) WithWriter(writer LoggerWriter) {
-	tis.writer = writer
+func (tis *componentData) getTag() Tag {
+	tis.mux.RLock()
+	defer tis.mux.RUnlock()
+
+	if tis.tagTmp == nil {
+		return tis.tag
+	}
+
+	tag := Tags(tis.tag...)
+	tag.Append(tis.tagTmp...)
+
+	return tag
+}
+
+func (tis *componentData) getStackDepth() int {
+	if tis.stackDepth < 1 {
+		return 1
+	}
+	return tis.stackDepth
+}
+
+func (tis *componentData) reset() {
+	tis.mux.Lock()
+	defer tis.mux.Unlock()
+
+	tis.tagTmp = nil
+	tis.withStack = false
+	tis.stackDepth = 4
+}
+
+func (tis *componentData) print(level LogLevel, v ...interface{}) {
+	logData := &JsonLogObject{
+		Time:  time.Now(),
+		Level: level,
+		Tag:   tis.getTag(),
+		Data:  Format(v...),
+	}
+
+	if tis.withStack {
+		logData.Stacks = GetLastCallStackDepth(tis.getStackDepth())
+		logData.Location = logData.Stacks[0]
+	} else {
+		logData.Location = GetLastCallStackDepth(1)[0]
+	}
+
+	tis.reset()
+
+	tis.writer(logData)
 }
 
 const (
-	logFormat = "%s %s:%d [%s] %s%s\n"
-	dateTime  = "2006-01-02 15:04:05"
+	dateTime = "2006-01-02 15:04:05"
 )
 
 // JsonLogObject 日志信息
 type JsonLogObject struct {
-	Format   string     `json:"format"`   // 默认格式化 "%v %v:%v [%c] %v %v\n"
 	Time     time.Time  `json:"time"`     // 时间
 	Location StackFrame `json:"location"` // 日志调用位置
 	Level    LogLevel   `json:"level"`    // 日志级别
 	Tag      Tag        `json:"tag"`      // tag
 	Data     string     `json:"data"`     // 日志数据
+	Stacks   Stacks     `json:"stacks"`   // 调用堆栈
 }
 
 func (tis *JsonLogObject) String() string {
@@ -144,9 +205,18 @@ func (tis *JsonLogObject) String() string {
 
 type LoggerWriter func(o *JsonLogObject)
 
+const (
+	logFormat      = "%s %s:%d [%s] %s%s\n"
+	logFormatStack = "%s %s:%d [%s] %s%s ↘↘↘\n%s\n"
+)
+
 var (
 	_getLogString = func(o *JsonLogObject) string {
-		return fmt.Sprintf(o.Format, o.Time.Format(dateTime), o.Location.File, o.Location.Line, o.Level, o.Tag.String(), o.Data)
+		if o.Stacks != nil {
+			return fmt.Sprintf(logFormatStack, o.Time.Format(dateTime), o.Location.File, o.Location.Line, o.Level, o.Tag.String(), o.Data, o.Stacks.String())
+		} else {
+			return fmt.Sprintf(logFormat, o.Time.Format(dateTime), o.Location.File, o.Location.Line, o.Level, o.Tag.String(), o.Data)
+		}
 	}
 
 	defaultLogWriter = func(o *JsonLogObject) {

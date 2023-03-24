@@ -7,22 +7,38 @@ import (
 	"strings"
 )
 
+type Stacks []StackFrame
+
+func (c *Stacks) String() string {
+	if c == nil {
+		return ""
+	}
+	var stacks = []StackFrame(*c)
+	var count = len(stacks)
+	if count > 0 {
+		var r = "stack: [\n"
+		for i := 0; i < count-1; i++ {
+			r += fmt.Sprintf("  %v:%v %v\n", stacks[i].File, stacks[i].Line, stacks[i].Func)
+		}
+		r += fmt.Sprintf("  %v:%v %v\n]", stacks[count-1].File, stacks[count-1].Line, stacks[count-1].Func)
+
+		return r
+	}
+
+	return ""
+}
+
 type StackFrame struct {
 	File string `json:"file"`
 	Line int    `json:"line"`
 	Func string `json:"func"`
 }
 
-// getLastCallStack 获取当前代码位置
-func getLastCallStack() StackFrame {
-	return GetLastCallStackDepth(1)[0]
-}
-
 // GetLastCallStackDepth 获取当前代码调用堆栈
-func GetLastCallStackDepth(depth int) []StackFrame {
+func GetLastCallStackDepth(depth int) Stacks {
 	var (
 		shortFile = true
-		result    []StackFrame
+		result    Stacks
 	)
 
 	if depth <= 0 {

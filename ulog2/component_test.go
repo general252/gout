@@ -3,6 +3,7 @@ package ulog2
 import (
 	"fmt"
 	"os"
+	"testing"
 )
 
 func ExampleComponent() {
@@ -10,9 +11,10 @@ func ExampleComponent() {
 	log.Debug("hello world")
 	log.Info("hello %v", "world")
 	log.Warn("hello", "world")
-	log.Error("%v %v", "hello", "world")
+	log.WithStack(5).Error("%v %v", "hello", "world")
 
 	log.WithTag("tempTag").Debug("I have temp tag")
+	log.Warn("hello", "world")
 
 	log.AddTag("tag3")
 	log.Debug("hello world")
@@ -29,4 +31,15 @@ func ExampleSetDefaultWriter() {
 	log.Debug("hello world")
 
 	// output:
+}
+
+func BenchmarkLog(b *testing.B) {
+	SetDefaultWriter(func(o *JsonLogObject) {
+
+	})
+	log := Component()
+
+	for i := 0; i < b.N; i++ {
+		log.Debug("hello world")
+	}
 }
