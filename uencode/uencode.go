@@ -11,11 +11,11 @@ import (
 	"encoding/json"
 	"regexp"
 
-	uuid "github.com/satori/go.uuid"
+	"github.com/google/uuid"
 )
 
 func UUID() string {
-	return uuid.NewV4().String()
+	return uuid.New().String()
 }
 
 func MD5Bit16(data []byte) string {
